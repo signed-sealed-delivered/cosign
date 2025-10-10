@@ -66,7 +66,7 @@ CAVEATS:
 
 		PersistentPreRun: options.BindViper,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return generate.GenerateKeyPairCmd(cmd.Context(), o.KMS, o.OutputKeyPrefix, args)
+			return generate.GenerateKeyPairCmd(cmd.Context(), o.KMS, o.OutputKeyPrefix, o.Algorithm, args)
 		},
 	}
 

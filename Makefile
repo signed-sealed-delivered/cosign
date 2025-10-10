@@ -81,11 +81,23 @@ log-%:
 cosign: $(SRCS)
 	CGO_ENABLED=0 $(GOEXE) build -trimpath -ldflags "$(LDFLAGS)" -o $@ ./cmd/cosign
 
+cosign-pq-circl: $(SRCS)
+	CGO_ENABLED=0 $(GOEXE) build -trimpath -tags=pq_circl -ldflags "$(LDFLAGS)" -o cosign ./cmd/cosign
+
+cosign-pq-openssl: $(SRCS)
+	CGO_ENABLED=0 $(GOEXE) build -trimpath -tags=pq_openssl -ldflags "$(LDFLAGS)" -o cosign ./cmd/cosign
+
 cosign-pivkey-pkcs11key: $(SRCS)
 	CGO_ENABLED=1 $(GOEXE) build -trimpath -tags=pivkey,pkcs11key -ldflags "$(LDFLAGS)" -o cosign ./cmd/cosign
 
 install: $(SRCS)
 	CGO_ENABLED=1 $(GOEXE) install -trimpath -ldflags "$(LDFLAGS)" ./cmd/cosign
+
+install-pq-circl: $(SRCS)
+	CGO_ENABLED=0 $(GOEXE) install -trimpath -tags=pq_circl -ldflags "$(LDFLAGS)" ./cmd/cosign
+
+install-pq-openssl: $(SRCS)
+	CGO_ENABLED=0 $(GOEXE) install -trimpath -tags=pq_openssl -ldflags "$(LDFLAGS)" ./cmd/cosign
 
 install-pivkey-pkcs11key: $(SRCS)
 	CGO_ENABLED=1 $(GOEXE) install -trimpath -tags=pivkey,pkcs11key -ldflags "$(LDFLAGS)" ./cmd/cosign
@@ -111,6 +123,12 @@ lint: golangci-lint ## Run golangci-lint linter
 
 test:
 	$(GOEXE) test $(shell $(GOEXE) list ./... | grep -v third_party/)
+
+test-pq-circl:
+	$(GOEXE) test -tags=pq_circl $(shell $(GOEXE) list ./... | grep -v third_party/)
+
+test-pq-openssl:
+	$(GOEXE) test -tags=pq_openssl $(shell $(GOEXE) list ./... | grep -v third_party/)
 
 clean:
 	rm -rf cosign

@@ -148,6 +148,31 @@ func keyTypeError(pemType, operation string, err error) error {
 	return fmt.Errorf("error %s %s key: %w", operation, keyType, err)
 }
 
+// KeyPairHandler provides an interface for key pair operations (generation and import)
+type KeyPairHandler interface {
+	// ImportKeyPair imports a key pair
+	ImportKeyPair(key crypto.PrivateKey, ptype string) (*Keys, error)
+
+	// GenerateKeyPairForAlgorithm generates a new key pair for the specified algorithm
+	GenerateKeyPairForAlgorithm(algorithmName string) (*Keys, error)
+}
+
+// classicalKeyPairHandler implements KeyPairHandler for classical keys
+type classicalKeyPairHandler struct{}
+
+// Global key pair handler instance
+var keyPairHandler KeyPairHandler = &classicalKeyPairHandler{}
+
+// SetKeyPairHandler sets the global key pair handler
+func SetKeyPairHandler(kph KeyPairHandler) {
+	keyPairHandler = kph
+}
+
+// GetKeyPairHandler returns the global key pair handler
+func GetKeyPairHandler() KeyPairHandler {
+	return keyPairHandler
+}
+
 // ImportKeyPair imports a key pair from a file containing a PEM-encoded
 // private key encoded with a password provided by the 'pf' function.
 // The private key can be in one of the following formats:
@@ -165,23 +190,32 @@ func ImportKeyPair(keyPath string, pf PassFunc) (*KeysBytes, error) {
 		return nil, fmt.Errorf("invalid pem block")
 	}
 
-	var pk crypto.Signer
-
 	key, err := cryptoutils.UnmarshalPEMToPrivateKey(pem.EncodeToMemory(p), nil)
 	if err != nil {
 		return nil, keyTypeError(p.Type, "parsing", err)
 	}
 
-	var ok bool
-	pk, ok = key.(crypto.Signer)
+	keys, err := GetKeyPairHandler().ImportKeyPair(key, p.Type)
+	if err != nil {
+		return nil, err
+	}
+	if keys == nil {
+		return nil, keyTypeError(p.Type, "importing", fmt.Errorf("expected key pair for %s", p.Type))
+	}
+	return marshalKeyPair(p.Type, *keys, pf)
+}
+
+// ImportKeyPair is the classical (non-PQ) implementation
+func (kph *classicalKeyPairHandler) ImportKeyPair(key crypto.PrivateKey, ptype string) (*Keys, error) {
+	pk, ok := key.(crypto.Signer)
 	if !ok {
 		return nil, fmt.Errorf("private key does not implement crypto.Signer")
 	}
 
-	if err = cryptoutils.ValidatePubKey(pk.Public()); err != nil {
-		return nil, keyTypeError(p.Type, "validating", err)
+	if err := cryptoutils.ValidatePubKey(pk.Public()); err != nil {
+		return nil, keyTypeError(ptype, "validating", err)
 	}
-	return marshalKeyPair(p.Type, Keys{pk, pk.Public()}, pf)
+	return &Keys{pk, pk.Public()}, nil
 }
 
 func marshalKeyPair(ptype string, keypair Keys, pf PassFunc) (key *KeysBytes, err error) {
@@ -237,7 +271,7 @@ func GenerateKeyPair(pf PassFunc) (*KeysBytes, error) {
 	return marshalKeyPair(SigstorePrivateKeyPemType, Keys{priv, priv.Public()}, pf)
 }
 
-func GenerateKeyPairWithAlgorithm(algo *signature.AlgorithmDetails, pf PassFunc) (*KeysBytes, error) {
+func GenerateKeyPairWithAlgorithm(algo *signature.AlgorithmDetails) (*Keys, error) {
 	priv, err := GeneratePrivateKeyWithAlgorithm(algo)
 	if err != nil {
 		return nil, err
@@ -246,8 +280,38 @@ func GenerateKeyPairWithAlgorithm(algo *signature.AlgorithmDetails, pf PassFunc)
 	if !ok {
 		return nil, fmt.Errorf("private key is not a signer verifier")
 	}
+	return &Keys{signer, signer.Public()}, nil
+}
+
+// GenerateKeyPairForAlgorithm generates a key pair for the specified algorithm string.
+func GenerateKeyPairForAlgorithm(algorithmName string, pf PassFunc) (*KeysBytes, error) {
+	keys, err := GetKeyPairHandler().GenerateKeyPairForAlgorithm(algorithmName)
+	if err != nil {
+		return nil, err
+	}
+	if keys == nil {
+		return nil, fmt.Errorf("expected keys for algorithm: %s", algorithmName)
+	}
 	// Emit SIGSTORE keys by default
-	return marshalKeyPair(SigstorePrivateKeyPemType, Keys{signer, signer.Public()}, pf)
+	return marshalKeyPair(SigstorePrivateKeyPemType, Keys{keys.private, keys.public}, pf)
+}
+
+// GenerateKeyPairForAlgorithm is the classical (non-PQ) implementation
+func (kph *classicalKeyPairHandler) GenerateKeyPairForAlgorithm(algorithmName string) (*Keys, error) {
+	for _, details := range SupportedKeyDetails {
+		algoDetails, err := signature.GetAlgorithmDetails(details)
+		if err != nil {
+			continue
+		}
+		flag, err := signature.FormatSignatureAlgorithmFlag(details)
+		if err != nil {
+			continue
+		}
+		if flag == algorithmName {
+			return GenerateKeyPairWithAlgorithm(&algoDetails)
+		}
+	}
+	return nil, fmt.Errorf("unsupported algorithm: %s", algorithmName)
 }
 
 // PemToECDSAKey marshals and returns the PEM-encoded ECDSA public key.

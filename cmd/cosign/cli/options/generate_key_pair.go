@@ -24,6 +24,7 @@ type GenerateKeyPairOptions struct {
 	// KMS Key Management Service
 	KMS             string
 	OutputKeyPrefix string
+	Algorithm       string
 }
 
 var _ Interface = (*GenerateKeyPairOptions)(nil)
@@ -34,4 +35,6 @@ func (o *GenerateKeyPairOptions) AddFlags(cmd *cobra.Command) {
 		"create key pair in KMS service to use for signing")
 	cmd.Flags().StringVar(&o.OutputKeyPrefix, "output-key-prefix", "cosign",
 		"name used for generated .pub and .key files (defaults to `cosign`)")
+	cmd.Flags().StringVar(&o.Algorithm, "algorithm", "",
+		"algorithm to use for key generation")
 }

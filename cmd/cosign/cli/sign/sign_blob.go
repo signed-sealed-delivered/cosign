@@ -19,7 +19,6 @@ import (
 	"context"
 	"crypto"
 	"crypto/sha256"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -174,7 +173,7 @@ func SignBlobCmd(ctx context.Context, ro *options.RootOptions, ko options.KeyOpt
 				if err != nil {
 					return nil, err
 				}
-				pkixPubKey, err := x509.MarshalPKIXPublicKey(pubKey)
+				pkixPubKey, err := cryptoutils.MarshalPublicKeyToDER(pubKey)
 				if err != nil {
 					return nil, err
 				}

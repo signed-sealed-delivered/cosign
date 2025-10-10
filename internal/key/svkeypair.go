@@ -22,7 +22,6 @@ import (
 	"crypto/ed25519"
 	"crypto/rsa"
 	"crypto/sha256"
-	"crypto/x509"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -49,7 +48,7 @@ func NewSignerVerifierKeypair(sv signature.SignerVerifier, defaultLoadOptions *[
 	if err != nil {
 		return nil, fmt.Errorf("getting public key: %w", err)
 	}
-	pubKeyBytes, err := x509.MarshalPKIXPublicKey(pubKey)
+	pubKeyBytes, err := cryptoutils.MarshalPublicKeyToDER(pubKey)
 	if err != nil {
 		return nil, fmt.Errorf("marshalling public key: %w", err)
 	}

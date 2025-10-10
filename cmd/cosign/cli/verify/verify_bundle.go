@@ -101,7 +101,7 @@ func AssembleNewBundle(ctx context.Context, sigBytes, signedTimestamp []byte, en
 		if err != nil {
 			return nil, err
 		}
-		pubKeyBytes, err := x509.MarshalPKIXPublicKey(pub)
+		pubKeyBytes, err := cryptoutils.MarshalPublicKeyToDER(pub)
 		if err != nil {
 			return nil, err
 		}

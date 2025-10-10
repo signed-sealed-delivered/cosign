@@ -20,7 +20,6 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/sha256"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
@@ -107,7 +106,7 @@ const entryIDHexStringLen = treeIDHexStringLen + uuidHexStringLen
 // (see RFC 6962 S3.2)
 // In CT V1 the log id is a hash of the public key.
 func GetTransparencyLogID(pub crypto.PublicKey) (string, error) {
-	pubBytes, err := x509.MarshalPKIXPublicKey(pub)
+	pubBytes, err := cryptoutils.MarshalPublicKeyToDER(pub)
 	if err != nil {
 		return "", err
 	}

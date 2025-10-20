@@ -3,7 +3,7 @@ module github.com/sigstore/cosign/v2
 go 1.24.6
 
 require (
-	cuelang.org/go v0.14.1
+	cuelang.org/go v0.14.2
 	github.com/ThalesIgnite/crypto11 v1.2.5
 	github.com/awslabs/amazon-ecr-credential-helper/ecr-login v0.10.1
 	github.com/buildkite/agent/v3 v3.105.0
@@ -12,7 +12,7 @@ require (
 	github.com/depcheck-test/depcheck-test v0.0.0-20220607135614-199033aaa936
 	github.com/digitorus/timestamp v0.0.0-20231217203849-220c5c2851b7
 	github.com/dustin/go-humanize v1.0.1
-	github.com/go-jose/go-jose/v4 v4.1.2
+	github.com/go-jose/go-jose/v4 v4.1.3
 	github.com/go-openapi/runtime v0.28.0
 	github.com/go-openapi/strfmt v0.23.0
 	github.com/go-openapi/swag v0.24.1
@@ -58,12 +58,12 @@ require (
 	golang.org/x/sync v0.17.0
 	golang.org/x/term v0.35.0
 	google.golang.org/api v0.249.0
-	google.golang.org/protobuf v1.36.9
+	google.golang.org/protobuf v1.36.10
 	k8s.io/api v0.34.1
 	k8s.io/apimachinery v0.34.1
 	k8s.io/client-go v0.34.1
-	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
-	sigs.k8s.io/release-utils v0.12.1
+	k8s.io/utils v0.0.0-20250820121507-0af2bda4dd1d
+	sigs.k8s.io/release-utils v0.12.2
 )
 
 require (

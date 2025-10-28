@@ -85,7 +85,7 @@ cosign-pq-circl: $(SRCS)
 	CGO_ENABLED=0 $(GOEXE) build -trimpath -tags=pq_circl -ldflags "$(LDFLAGS)" -o cosign ./cmd/cosign
 
 cosign-pq-openssl: $(SRCS)
-	CGO_ENABLED=0 $(GOEXE) build -trimpath -tags=pq_openssl -ldflags "$(LDFLAGS)" -o cosign ./cmd/cosign
+	CGO_ENABLED=1 $(GOEXE) build -trimpath -tags=pq_openssl -ldflags "$(LDFLAGS)" -o cosign ./cmd/cosign
 
 cosign-pivkey-pkcs11key: $(SRCS)
 	CGO_ENABLED=1 $(GOEXE) build -trimpath -tags=pivkey,pkcs11key -ldflags "$(LDFLAGS)" -o cosign ./cmd/cosign
@@ -97,7 +97,7 @@ install-pq-circl: $(SRCS)
 	CGO_ENABLED=0 $(GOEXE) install -trimpath -tags=pq_circl -ldflags "$(LDFLAGS)" ./cmd/cosign
 
 install-pq-openssl: $(SRCS)
-	CGO_ENABLED=0 $(GOEXE) install -trimpath -tags=pq_openssl -ldflags "$(LDFLAGS)" ./cmd/cosign
+	CGO_ENABLED=1 $(GOEXE) install -trimpath -tags=pq_openssl -ldflags "$(LDFLAGS)" ./cmd/cosign
 
 install-pivkey-pkcs11key: $(SRCS)
 	CGO_ENABLED=1 $(GOEXE) install -trimpath -tags=pivkey,pkcs11key -ldflags "$(LDFLAGS)" ./cmd/cosign

@@ -1381,7 +1381,7 @@ func TestValidateUnpackCertWithTrustedMaterial(t *testing.T) {
 	rootCert, rootKey, _ := test.GenerateRootCa()
 	ca.Root = rootCert
 	leafCert, _, _ := test.GenerateLeafCert(subject, oidcIssuer, rootCert, rootKey)
-	trustedRoot, err := root.NewTrustedRoot(root.TrustedRootMediaType01, []root.CertificateAuthority{&ca}, nil, nil, nil)
+	trustedRoot, err := root.NewTrustedRoot(root.TrustedRootMediaType01, []root.CertificateAuthority{&ca}, nil, nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

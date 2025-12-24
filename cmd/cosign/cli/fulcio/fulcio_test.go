@@ -48,6 +48,10 @@ func (p *testClient) SigningCert(cr api.CertificateRequest, token string) (*api.
 	return &p.payload, p.err
 }
 
+func (p *testClient) SigningCertWithOptions(cr api.CertificateRequest, token string, useMTC bool) (interface{}, error) {
+	return &p.payload, p.err
+}
+
 func (p *testClient) RootCert() (*api.RootResponse, error) {
 	return &p.rootResp, p.err
 }

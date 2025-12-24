@@ -123,11 +123,11 @@ func importPQKeyPair(pqPriv *pqcrypto.PQPrivateKey, ptype string) (*Keys, error)
 // validatePQPublicKey validates a PQ public key by checking its algorithm and key size
 func validatePQPublicKey(pub *pqcrypto.PQPublicKey) error {
 	switch pub.Algorithm {
-	case pqcrypto.AlgorithmMLDSA65:
+	case pqcrypto.MLDSA65Algorithm:
 		if len(pub.KeyData) != 1952 {
 			return fmt.Errorf("invalid ML-DSA-65 public key size: got %d, want 1952", len(pub.KeyData))
 		}
-	case pqcrypto.AlgorithmMLDSA87:
+	case pqcrypto.MLDSA87Algorithm:
 		if len(pub.KeyData) != 2592 {
 			return fmt.Errorf("invalid ML-DSA-87 public key size: got %d, want 2592", len(pub.KeyData))
 		}

@@ -122,6 +122,19 @@ func (k *SignerVerifierKeypair) GetPublicKeyPem() (string, error) {
 	return string(pemBytes), nil
 }
 
+// GetPublicKeyDer returns the public key in DER format.
+func (k *SignerVerifierKeypair) GetPublicKeyDer() ([]byte, error) {
+	pubKey, err := k.sv.PublicKey()
+	if err != nil {
+		return nil, err
+	}
+	pemBytes, err := cryptoutils.MarshalPublicKeyToDER(pubKey)
+	if err != nil {
+		return nil, err
+	}
+	return pemBytes, nil
+}
+
 // SignData signs the given data with the SignerVerifier.
 func (k *SignerVerifierKeypair) SignData(ctx context.Context, data []byte) ([]byte, []byte, error) {
 	h := k.sigAlg.GetHashType().New()

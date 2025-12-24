@@ -16,6 +16,8 @@
 package options
 
 import (
+	"time"
+
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +25,9 @@ const DefaultRekorURL = "https://rekor.sigstore.dev"
 
 // RekorOptions is the wrapper for Rekor related options.
 type RekorOptions struct {
-	URL string
+	URL     string
+	Timeout time.Duration
+	Retries uint
 }
 
 var _ Interface = (*RekorOptions)(nil)
@@ -32,4 +36,10 @@ var _ Interface = (*RekorOptions)(nil)
 func (o *RekorOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.URL, "rekor-url", DefaultRekorURL,
 		"address of rekor STL server")
+
+	cmd.Flags().DurationVar(&o.Timeout, "rekor-timeout", 0,
+		"timeout for Rekor requests (default: 30s, 0 = use library default)")
+
+	cmd.Flags().UintVar(&o.Retries, "rekor-retries", 0,
+		"number of retries for Rekor HTTP 5XX errors (default: 0)")
 }

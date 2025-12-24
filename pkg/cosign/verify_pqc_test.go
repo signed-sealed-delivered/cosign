@@ -137,7 +137,7 @@ func (s *mldsaSigner) SignMessage(message io.Reader, opts ...signature.SignOptio
 	if err != nil {
 		return nil, err
 	}
-	return s.privateKey.Sign(messageBytes)
+	return s.privateKey.Sign(nil, messageBytes, crypto.Hash(0))
 }
 
 func (s *mldsaSigner) VerifySignature(sig io.Reader, message io.Reader, opts ...signature.VerifyOption) error {

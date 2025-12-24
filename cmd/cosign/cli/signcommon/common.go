@@ -689,5 +689,10 @@ func LoadTrustedMaterialAndSigningConfig(ctx context.Context, ko *options.KeyOpt
 			return fmt.Errorf("error getting signing config from TUF: %w", err)
 		}
 	}
+
+	if ko.SigningConfig != nil {
+		ko.SigningConfig.UseMTC = ko.UseMTC
+	}
+
 	return nil
 }

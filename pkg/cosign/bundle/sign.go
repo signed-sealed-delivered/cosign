@@ -29,7 +29,22 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
+// SignDataOptions contains optional configuration for signing operations.
+type SignDataOptions struct {
+	FulcioTimeout  time.Duration
+	FulcioRetries  uint
+	MTCMaxWaitTime time.Duration
+	RekorTimeout   time.Duration
+	RekorRetries   uint
+	TSATimeout     time.Duration
+	TSARetries     uint
+}
+
 func SignData(ctx context.Context, content sign.Content, keypair sign.Keypair, idToken string, signingConfig *root.SigningConfig, trustedMaterial root.TrustedMaterial) ([]byte, error) {
+	return SignDataWithOptions(ctx, content, keypair, idToken, signingConfig, trustedMaterial, nil)
+}
+
+func SignDataWithOptions(ctx context.Context, content sign.Content, keypair sign.Keypair, idToken string, signingConfig *root.SigningConfig, trustedMaterial root.TrustedMaterial, signOpts *SignDataOptions) ([]byte, error) {
 	var opts sign.BundleOptions
 
 	if trustedMaterial != nil {
@@ -46,13 +61,20 @@ func SignData(ctx context.Context, content sign.Content, keypair sign.Keypair, i
 		}
 		fulcioOpts := &sign.FulcioOptions{
 			BaseURL: fulcioSvc.URL,
-			Timeout: 30 * time.Second,
-			Retries: 1,
+		}
+		if signOpts != nil {
+			fulcioOpts.Timeout = signOpts.FulcioTimeout
+			fulcioOpts.Retries = signOpts.FulcioRetries
 		}
 		opts.CertificateProvider = sign.NewFulcio(fulcioOpts)
-		opts.CertificateProviderOptions = &sign.CertificateProviderOptions{
+		certProviderOpts := &sign.CertificateProviderOptions{
 			IDToken: idToken,
+			UseMTC:  signingConfig.UseMTC,
 		}
+		if signOpts != nil && signOpts.MTCMaxWaitTime > 0 {
+			certProviderOpts.MTCMaxWaitTime = signOpts.MTCMaxWaitTime
+		}
+		opts.CertificateProviderOptions = certProviderOpts
 	} else {
 		publicKeyPem, err := keypair.GetPublicKeyPem()
 		if err != nil {
@@ -86,9 +108,11 @@ func SignData(ctx context.Context, content sign.Content, keypair sign.Keypair, i
 		}
 		for _, tsaSvc := range tsaSvcs {
 			tsaOpts := &sign.TimestampAuthorityOptions{
-				URL:     tsaSvc.URL,
-				Timeout: 30 * time.Second,
-				Retries: 1,
+				URL: tsaSvc.URL,
+			}
+			if signOpts != nil {
+				tsaOpts.Timeout = signOpts.TSATimeout
+				tsaOpts.Retries = signOpts.TSARetries
 			}
 			opts.TimestampAuthorities = append(opts.TimestampAuthorities, sign.NewTimestampAuthority(tsaOpts))
 		}
@@ -103,9 +127,11 @@ func SignData(ctx context.Context, content sign.Content, keypair sign.Keypair, i
 		for _, rekorSvc := range rekorSvcs {
 			rekorOpts := &sign.RekorOptions{
 				BaseURL: rekorSvc.URL,
-				Timeout: 90 * time.Second,
-				Retries: 1,
 				Version: rekorSvc.MajorAPIVersion,
+			}
+			if signOpts != nil {
+				rekorOpts.Timeout = signOpts.RekorTimeout
+				rekorOpts.Retries = signOpts.RekorRetries
 			}
 			opts.TransparencyLogs = append(opts.TransparencyLogs, sign.NewRekor(rekorOpts))
 		}

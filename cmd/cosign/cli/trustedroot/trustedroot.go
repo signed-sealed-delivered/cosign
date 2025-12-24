@@ -26,14 +26,18 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/sigstore/cosign/v3/pkg/cosign"
+	fulciopb "github.com/sigstore/fulcio/pkg/generated/protobuf"
 	"github.com/sigstore/rekor-tiles/v2/pkg/note"
 	"github.com/sigstore/sigstore-go/pkg/root"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type CreateCmd struct {
@@ -41,6 +45,7 @@ type CreateCmd struct {
 	RekorSpecs  []string
 	CTFESpecs   []string
 	TSASpecs    []string
+	MTCSpecs    []string
 
 	CertChain        []string
 	FulcioURI        []string
@@ -62,6 +67,7 @@ func (c *CreateCmd) Exec(_ context.Context) error {
 	ctLogs := make(map[string]*root.TransparencyLog)
 	var timestampAuthorities []root.TimestampingAuthority
 	rekorTransparencyLogs := make(map[string]*root.TransparencyLog)
+	var mtcSigningAuthorities []*root.MTCSigningAuthority
 	var err error
 
 	// Decide whether to use new or old flags
@@ -250,9 +256,18 @@ func (c *CreateCmd) Exec(_ context.Context) error {
 		}
 	}
 
+	for _, spec := range c.MTCSpecs {
+		mtcAuthorities, err := parseMTCSpec(spec)
+		if err != nil {
+			return fmt.Errorf("parsing mtc spec: %w", err)
+		}
+		mtcSigningAuthorities = append(mtcSigningAuthorities, mtcAuthorities...)
+	}
+
 	newTrustedRoot, err := root.NewTrustedRoot(root.TrustedRootMediaType01,
 		fulcioCertAuthorities, ctLogs, timestampAuthorities,
 		rekorTransparencyLogs,
+		mtcSigningAuthorities,
 	)
 	if err != nil {
 		return err
@@ -564,4 +579,80 @@ func getSignatureHashAlgo(pubKey crypto.PublicKey) crypto.Hash {
 		h = crypto.SHA256
 	}
 	return h
+}
+
+func parseMTCSpec(spec string) ([]*root.MTCSigningAuthority, error) {
+	kvs, err := parseKVs(spec)
+	if err != nil {
+		return nil, err
+	}
+
+	requiredKeys := []string{"url"}
+	for _, key := range requiredKeys {
+		if val, ok := kvs[key]; !ok || val == "" {
+			return nil, fmt.Errorf("missing or empty required key '%s' in mtc spec", key)
+		}
+	}
+
+	fulcioURL := kvs["url"]
+
+	mtcKeysURL := strings.TrimSuffix(fulcioURL, "/") + "/api/v2/mtc/publicKeys"
+	resp, err := http.Get(mtcKeysURL)
+	if err != nil {
+		return nil, fmt.Errorf("fetching MTC public keys from %s: %w", mtcKeysURL, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("failed to fetch MTC public keys: HTTP %d: %s", resp.StatusCode, string(body))
+	}
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading MTC public keys response: %w", err)
+	}
+
+	var mtcKeys fulciopb.MTCPublicKeys
+	if err := protojson.Unmarshal(bodyBytes, &mtcKeys); err != nil {
+		return nil, fmt.Errorf("parsing MTC public keys response: %w", err)
+	}
+
+	var authorities []*root.MTCSigningAuthority
+	for _, key := range mtcKeys.PublicKeys {
+		pubKey, err := cryptoutils.UnmarshalPEMToPublicKey([]byte(key.PublicKeyPem))
+		if err != nil {
+			return nil, fmt.Errorf("parsing MTC public key PEM: %w", err)
+		}
+
+		var startTime, endTime time.Time
+		if st, ok := kvs["start-time"]; ok && st != "" {
+			startTime, err = time.Parse(time.RFC3339, st)
+			if err != nil {
+				return nil, fmt.Errorf("parsing start-time: %w", err)
+			}
+		}
+		if et, ok := kvs["end-time"]; ok && et != "" {
+			endTime, err = time.Parse(time.RFC3339, et)
+			if err != nil {
+				return nil, fmt.Errorf("parsing end-time: %w", err)
+			}
+		}
+
+		operator := kvs["operator"]
+		if operator == "" {
+			operator = "unknown"
+		}
+
+		authority := &root.MTCSigningAuthority{
+			URI:                 fulcioURL,
+			PublicKey:           pubKey,
+			ValidityPeriodStart: startTime,
+			ValidityPeriodEnd:   endTime,
+			Operator:            operator,
+		}
+		authorities = append(authorities, authority)
+	}
+
+	return authorities, nil
 }

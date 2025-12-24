@@ -16,6 +16,8 @@
 package options
 
 import (
+	"time"
+
 	"github.com/spf13/cobra"
 )
 
@@ -27,6 +29,10 @@ type FulcioOptions struct {
 	AuthFlow                 string
 	IdentityToken            string
 	InsecureSkipFulcioVerify bool
+	UseMTC                   bool
+	Timeout                  time.Duration
+	Retries                  uint
+	MTCMaxWaitTime           time.Duration
 }
 
 var _ Interface = (*FulcioOptions)(nil)
@@ -46,4 +52,16 @@ func (o *FulcioOptions) AddFlags(cmd *cobra.Command) {
 
 	cmd.Flags().BoolVar(&o.InsecureSkipFulcioVerify, "insecure-skip-verify", false,
 		"skip verifying fulcio published to the SCT (this should only be used for testing).")
+
+	cmd.Flags().BoolVar(&o.UseMTC, "fulcio-use-mtc", false,
+		"use Merkle Tree Certificates (MTC) batching mode for certificate requests.")
+
+	cmd.Flags().DurationVar(&o.Timeout, "fulcio-timeout", 0,
+		"timeout for Fulcio requests (default: 30s, 0 = use library default)")
+
+	cmd.Flags().UintVar(&o.Retries, "fulcio-retries", 0,
+		"number of retries for Fulcio HTTP 5XX errors (default: 0)")
+
+	cmd.Flags().DurationVar(&o.MTCMaxWaitTime, "fulcio-mtc-max-wait", 0,
+		"maximum time to wait for MTC batch processing (default: 15s, 0 = use library default)")
 }

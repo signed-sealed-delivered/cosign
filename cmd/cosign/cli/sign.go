@@ -113,6 +113,7 @@ race conditions or (worse) malicious tampering.
 				IDToken:                        o.Fulcio.IdentityToken,
 				FulcioAuthFlow:                 o.Fulcio.AuthFlow,
 				InsecureSkipFulcioVerify:       o.Fulcio.InsecureSkipFulcioVerify,
+				UseMTC:                         o.Fulcio.UseMTC,
 				RekorURL:                       o.Rekor.URL,
 				OIDCIssuer:                     o.OIDC.Issuer,
 				OIDCClientID:                   o.OIDC.ClientID,

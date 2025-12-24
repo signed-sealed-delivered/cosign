@@ -33,6 +33,7 @@ import (
 	"github.com/sigstore/cosign/v3/pkg/oci/static"
 	v1 "github.com/sigstore/protobuf-specs/gen/pb-go/common/v1"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
+	"github.com/sigstore/sigstore/pkg/cryptoutils/goodkey"
 	"github.com/sigstore/sigstore/pkg/signature"
 	"github.com/sigstore/sigstore/pkg/signature/options"
 )
@@ -212,7 +213,7 @@ func (kph *classicalKeyPairHandler) ImportKeyPair(key crypto.PrivateKey, ptype s
 		return nil, fmt.Errorf("private key does not implement crypto.Signer")
 	}
 
-	if err := cryptoutils.ValidatePubKey(pk.Public()); err != nil {
+	if err := goodkey.ValidatePubKey(pk.Public()); err != nil {
 		return nil, keyTypeError(ptype, "validating", err)
 	}
 	return &Keys{pk, pk.Public()}, nil

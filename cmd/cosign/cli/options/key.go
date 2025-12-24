@@ -76,4 +76,6 @@ type KeyOpts struct {
 	// SigningAlgorithm is the AlgorithmDetails string representation used to
 	// sign/hash the payload.
 	SigningAlgorithm string
+	// Use Merkle Tree Certificates
+	UseMTC bool
 }

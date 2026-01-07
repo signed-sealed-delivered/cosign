@@ -649,8 +649,8 @@ github.com/signed-sealed-delivered/protobuf-specs v0.0.0-20251223173609-5b1543b0
 github.com/signed-sealed-delivered/protobuf-specs v0.0.0-20251223173609-5b1543b0554f/go.mod h1:4uStRG7Klw8I2gR9I3P+iBlBf0vvYyWPoqWWKcuGnk8=
 github.com/signed-sealed-delivered/sigstore v0.0.0-20251203153608-e2a24423c4a6 h1:VSD6UTgBL9P+KBztL6qpMorPdXIZUPpbe68/sB+QRk0=
 github.com/signed-sealed-delivered/sigstore v0.0.0-20251203153608-e2a24423c4a6/go.mod h1:2X3Kt1nBmuZAcshMKHtOF4PMGOccuiCW4qQC8h3gac0=
-github.com/signed-sealed-delivered/sigstore-go v0.0.0-20251224181637-0cd667ed4af7 h1:5dCPH+X4mjvI8CvCVucW29eQmYHy3KwKBc95iG3ZJCE=
-github.com/signed-sealed-delivered/sigstore-go v0.0.0-20251224181637-0cd667ed4af7/go.mod h1:OToIPsiQB26yVE4bXrQhFFu0n8SVawERODLAxlHVAx8=
+github.com/signed-sealed-delivered/sigstore-go v0.0.0-20260107191636-9344b5a165ce h1:DYIHSBJt8UzVqRF0w3yy6cmXStRTv5ck4m0CMkzPFKk=
+github.com/signed-sealed-delivered/sigstore-go v0.0.0-20260107191636-9344b5a165ce/go.mod h1:OToIPsiQB26yVE4bXrQhFFu0n8SVawERODLAxlHVAx8=
 github.com/sigstore/rekor v1.4.3 h1:2+aw4Gbgumv8vYM/QVg6b+hvr4x4Cukur8stJrVPKU0=
 github.com/sigstore/rekor v1.4.3/go.mod h1:o0zgY087Q21YwohVvGwV9vK1/tliat5mfnPiVI3i75o=
 github.com/sigstore/rekor-tiles/v2 v2.0.1 h1:1Wfz15oSRNGF5Dzb0lWn5W8+lfO50ork4PGIfEKjZeo=

@@ -316,16 +316,18 @@ require (
 replace github.com/sigstore/sigstore => github.com/signed-sealed-delivered/sigstore v0.0.0-20251203153608-e2a24423c4a6
 
 // replace github.com/sigstore/sigstore-go => github.com/signed-sealed-delivered/sigstore-go mtc_batching
-replace github.com/sigstore/sigstore-go => github.com/signed-sealed-delivered/sigstore-go v0.0.0-20260107191636-9344b5a165ce
+// replace github.com/sigstore/sigstore-go => github.com/signed-sealed-delivered/sigstore-go v0.0.0-20260107191636-9344b5a165ce
 
-// replace github.com/sigstore/sigstore-go => ../sigstore-go
+replace github.com/sigstore/sigstore-go => ../sigstore-go
 
 // replace github.com/sigstore/protobuf-specs => github.com/signed-sealed-delivered/protobuf-specs mtc_batching
-replace github.com/sigstore/protobuf-specs => github.com/signed-sealed-delivered/protobuf-specs v0.0.0-20251223173609-5b1543b0554f
+// replace github.com/sigstore/protobuf-specs => github.com/signed-sealed-delivered/protobuf-specs v0.0.0-20251223173609-5b1543b0554f
 
-// replace github.com/sigstore/protobuf-specs => ../protobuf-specs
+replace github.com/sigstore/protobuf-specs => ../protobuf-specs
 
 // replace github.com/sigstore/fulcio => github.com/signed-sealed-delivered/fulcio mtc_batching
-replace github.com/sigstore/fulcio => github.com/signed-sealed-delivered/fulcio v0.0.0-20251224191002-942776538285
+// replace github.com/sigstore/fulcio => github.com/signed-sealed-delivered/fulcio v0.0.0-20251224191002-942776538285
 
-// replace github.com/sigstore/fulcio => ../fulcio
+replace github.com/sigstore/fulcio => ../fulcio
+
+replace github.com/sigstore/rekor => ../rekor

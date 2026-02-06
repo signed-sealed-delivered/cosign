@@ -33,7 +33,12 @@ import (
 )
 
 // GetCert returns the PEM-encoded signature of the OIDC identity returned as part of an interactive oauth2 flow plus the PEM-encoded cert chain.
-func GetCert(_ context.Context, sv signature.SignerVerifier, idToken, flow, oidcIssuer, oidcClientID, oidcClientSecret, oidcRedirectURL string, fClient api.LegacyClient) (*api.CertificateResponse, error) {
+func GetCert(ctx context.Context, sv signature.SignerVerifier, idToken, flow, oidcIssuer, oidcClientID, oidcClientSecret, oidcRedirectURL string, fClient api.LegacyClient) (*api.CertificateResponse, error) {
+	return GetCertWithMode(ctx, sv, idToken, flow, oidcIssuer, oidcClientID, oidcClientSecret, oidcRedirectURL, fClient, api.CertificateModeTraditional)
+}
+
+// GetCertWithMode returns a certificate with the specified mode (traditional, hybrid, or MTC).
+func GetCertWithMode(_ context.Context, sv signature.SignerVerifier, idToken, flow, oidcIssuer, oidcClientID, oidcClientSecret, oidcRedirectURL string, fClient api.LegacyClient, mode api.CertificateMode) (*api.CertificateResponse, error) {
 	sub, tok, err := auth.AuthenticateCaller(flow, idToken, oidcIssuer, oidcClientID, oidcClientSecret, oidcRedirectURL)
 	if err != nil {
 		return nil, err
@@ -59,9 +64,21 @@ func GetCert(_ context.Context, sv signature.SignerVerifier, idToken, flow, oidc
 		SignedEmailAddress: proof,
 	}
 
-	fmt.Fprintln(os.Stderr, "Retrieving signed certificate...")
+	if mode == api.CertificateModeHybrid {
+		fmt.Fprintln(os.Stderr, "Retrieving hybrid signed certificate...")
+	} else {
+		fmt.Fprintln(os.Stderr, "Retrieving signed certificate...")
+	}
 
-	return fClient.SigningCert(cr, tok)
+	resp, err := fClient.SigningCertWithMode(cr, tok, mode)
+	if err != nil {
+		return nil, err
+	}
+	certResp, ok := resp.(*api.CertificateResponse)
+	if !ok {
+		return nil, fmt.Errorf("unexpected response type: %T", resp)
+	}
+	return certResp, nil
 }
 
 type Signer struct {
@@ -87,7 +104,13 @@ func NewSigner(ctx context.Context, ko options.KeyOpts, signer signature.SignerV
 		return nil, fmt.Errorf("setting auth flow: %w", err)
 	}
 
-	resp, err := GetCert(ctx, signer, idToken, flow, ko.OIDCIssuer, ko.OIDCClientID, ko.OIDCClientSecret, ko.OIDCRedirectURL, fClient)
+	// Determine certificate mode
+	mode := api.CertificateModeTraditional
+	if ko.UseHybrid {
+		mode = api.CertificateModeHybrid
+	}
+
+	resp, err := GetCertWithMode(ctx, signer, idToken, flow, ko.OIDCIssuer, ko.OIDCClientID, ko.OIDCClientSecret, ko.OIDCRedirectURL, fClient, mode)
 	if err != nil {
 		return nil, fmt.Errorf("retrieving cert: %w", err)
 	}

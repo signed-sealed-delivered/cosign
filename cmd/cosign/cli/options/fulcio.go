@@ -30,6 +30,7 @@ type FulcioOptions struct {
 	IdentityToken            string
 	InsecureSkipFulcioVerify bool
 	UseMTC                   bool
+	UseHybrid                bool
 	Timeout                  time.Duration
 	Retries                  uint
 	MTCMaxWaitTime           time.Duration
@@ -55,6 +56,9 @@ func (o *FulcioOptions) AddFlags(cmd *cobra.Command) {
 
 	cmd.Flags().BoolVar(&o.UseMTC, "fulcio-use-mtc", false,
 		"use Merkle Tree Certificates (MTC) batching mode for certificate requests.")
+
+	cmd.Flags().BoolVar(&o.UseHybrid, "fulcio-use-hybrid", false,
+		"request ITU-T X.509 (2019) hybrid certificates with both classical and alternative signatures.")
 
 	cmd.Flags().DurationVar(&o.Timeout, "fulcio-timeout", 0,
 		"timeout for Fulcio requests (default: 30s, 0 = use library default)")

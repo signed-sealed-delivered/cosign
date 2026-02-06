@@ -68,6 +68,7 @@ func AttestBlob() *cobra.Command {
 				FulcioAuthFlow:                 o.Fulcio.AuthFlow,
 				InsecureSkipFulcioVerify:       o.Fulcio.InsecureSkipFulcioVerify,
 				UseMTC:                         o.Fulcio.UseMTC,
+				UseHybrid:                      o.Fulcio.UseHybrid,
 				RekorURL:                       o.Rekor.URL,
 				OIDCIssuer:                     o.OIDC.Issuer,
 				OIDCClientID:                   o.OIDC.ClientID,

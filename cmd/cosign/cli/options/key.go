@@ -78,4 +78,6 @@ type KeyOpts struct {
 	SigningAlgorithm string
 	// Use Merkle Tree Certificates
 	UseMTC bool
+	// Use ITU-T X.509 (2019) hybrid certificates with classical and PQ signatures
+	UseHybrid bool
 }

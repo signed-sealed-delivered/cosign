@@ -52,6 +52,10 @@ func (p *testClient) SigningCertWithOptions(cr api.CertificateRequest, token str
 	return &p.payload, p.err
 }
 
+func (p *testClient) SigningCertWithMode(cr api.CertificateRequest, token string, mode api.CertificateMode) (interface{}, error) {
+	return &p.payload, p.err
+}
+
 func (p *testClient) RootCert() (*api.RootResponse, error) {
 	return &p.rootResp, p.err
 }

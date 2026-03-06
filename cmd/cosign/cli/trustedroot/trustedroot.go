@@ -451,13 +451,27 @@ func parseFulcioSpec(spec string) (root.CertificateAuthority, error) {
 		}
 	}
 
-	return &root.FulcioCertificateAuthority{
+	ca := &root.FulcioCertificateAuthority{
 		Root:                rootCert,
 		Intermediates:       intermediates,
 		ValidityPeriodStart: startTime,
 		ValidityPeriodEnd:   endTime,
 		URI:                 kvs["url"],
-	}, nil
+	}
+
+	if altKeyPath, ok := kvs["alt-public-key"]; ok && altKeyPath != "" {
+		altKeyPEM, err := os.ReadFile(altKeyPath)
+		if err != nil {
+			return nil, fmt.Errorf("reading alt-public-key file: %w", err)
+		}
+		altPubKey, err := cryptoutils.UnmarshalPEMToPublicKey(altKeyPEM)
+		if err != nil {
+			return nil, fmt.Errorf("parsing alt-public-key: %w", err)
+		}
+		ca.AltPublicKey = altPubKey
+	}
+
+	return ca, nil
 }
 
 func parseTSASpec(spec string) (root.TimestampingAuthority, error) {

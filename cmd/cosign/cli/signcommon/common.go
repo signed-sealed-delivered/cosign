@@ -692,6 +692,7 @@ func LoadTrustedMaterialAndSigningConfig(ctx context.Context, ko *options.KeyOpt
 
 	if ko.SigningConfig != nil {
 		ko.SigningConfig.UseMTC = ko.UseMTC
+		ko.SigningConfig.UseHybrid = ko.UseHybrid
 	}
 
 	return nil

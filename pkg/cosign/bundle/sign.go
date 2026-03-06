@@ -68,8 +68,9 @@ func SignDataWithOptions(ctx context.Context, content sign.Content, keypair sign
 		}
 		opts.CertificateProvider = sign.NewFulcio(fulcioOpts)
 		certProviderOpts := &sign.CertificateProviderOptions{
-			IDToken: idToken,
-			UseMTC:  signingConfig.UseMTC,
+			IDToken:   idToken,
+			UseMTC:    signingConfig.UseMTC,
+			UseHybrid: signingConfig.UseHybrid,
 		}
 		if signOpts != nil && signOpts.MTCMaxWaitTime > 0 {
 			certProviderOpts.MTCMaxWaitTime = signOpts.MTCMaxWaitTime

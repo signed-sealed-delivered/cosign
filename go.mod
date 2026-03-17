@@ -313,7 +313,9 @@ require (
 )
 
 // replace github.com/sigstore/sigstore => github.com/signed-sealed-delivered/sigstore mtc_batching
-replace github.com/sigstore/sigstore => github.com/signed-sealed-delivered/sigstore v0.0.0-20251203153608-e2a24423c4a6
+//replace github.com/sigstore/sigstore => github.com/signed-sealed-delivered/sigstore v0.0.0-20251203153608-e2a24423c4a6
+
+replace github.com/sigstore/sigstore => ../sigstore
 
 // replace github.com/sigstore/sigstore-go => github.com/signed-sealed-delivered/sigstore-go mtc_batching
 // replace github.com/sigstore/sigstore-go => github.com/signed-sealed-delivered/sigstore-go v0.0.0-20260107191636-9344b5a165ce

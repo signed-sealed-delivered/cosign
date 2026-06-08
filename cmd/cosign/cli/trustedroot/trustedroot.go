@@ -45,7 +45,7 @@ type CreateCmd struct {
 	RekorSpecs  []string
 	CTFESpecs   []string
 	TSASpecs    []string
-	MTCSpecs    []string
+	RHMTCSpecs  []string
 
 	CertChain        []string
 	FulcioURI        []string
@@ -67,7 +67,7 @@ func (c *CreateCmd) Exec(_ context.Context) error {
 	ctLogs := make(map[string]*root.TransparencyLog)
 	var timestampAuthorities []root.TimestampingAuthority
 	rekorTransparencyLogs := make(map[string]*root.TransparencyLog)
-	var mtcSigningAuthorities []*root.MTCSigningAuthority
+	var rhmtcSigningAuthorities []*root.RHMTCSigningAuthority
 	var err error
 
 	// Decide whether to use new or old flags
@@ -256,18 +256,18 @@ func (c *CreateCmd) Exec(_ context.Context) error {
 		}
 	}
 
-	for _, spec := range c.MTCSpecs {
-		mtcAuthorities, err := parseMTCSpec(spec)
+	for _, spec := range c.RHMTCSpecs {
+		rhmtcAuthorities, err := parseRHMTCSpec(spec)
 		if err != nil {
 			return fmt.Errorf("parsing mtc spec: %w", err)
 		}
-		mtcSigningAuthorities = append(mtcSigningAuthorities, mtcAuthorities...)
+		rhmtcSigningAuthorities = append(rhmtcSigningAuthorities, rhmtcAuthorities...)
 	}
 
 	newTrustedRoot, err := root.NewTrustedRoot(root.TrustedRootMediaType01,
 		fulcioCertAuthorities, ctLogs, timestampAuthorities,
 		rekorTransparencyLogs,
-		mtcSigningAuthorities,
+		rhmtcSigningAuthorities,
 	)
 	if err != nil {
 		return err
@@ -595,7 +595,7 @@ func getSignatureHashAlgo(pubKey crypto.PublicKey) crypto.Hash {
 	return h
 }
 
-func parseMTCSpec(spec string) ([]*root.MTCSigningAuthority, error) {
+func parseRHMTCSpec(spec string) ([]*root.RHMTCSigningAuthority, error) {
 	kvs, err := parseKVs(spec)
 	if err != nil {
 		return nil, err
@@ -610,7 +610,7 @@ func parseMTCSpec(spec string) ([]*root.MTCSigningAuthority, error) {
 
 	fulcioURL := kvs["url"]
 
-	mtcKeysURL := strings.TrimSuffix(fulcioURL, "/") + "/api/v2/mtc/publicKeys"
+	mtcKeysURL := strings.TrimSuffix(fulcioURL, "/") + "/api/v2/rh/mtc/publicKeys"
 	resp, err := http.Get(mtcKeysURL)
 	if err != nil {
 		return nil, fmt.Errorf("fetching MTC public keys from %s: %w", mtcKeysURL, err)
@@ -627,12 +627,12 @@ func parseMTCSpec(spec string) ([]*root.MTCSigningAuthority, error) {
 		return nil, fmt.Errorf("reading MTC public keys response: %w", err)
 	}
 
-	var mtcKeys fulciopb.MTCPublicKeys
+	var mtcKeys fulciopb.RhMtcPublicKeys
 	if err := protojson.Unmarshal(bodyBytes, &mtcKeys); err != nil {
 		return nil, fmt.Errorf("parsing MTC public keys response: %w", err)
 	}
 
-	var authorities []*root.MTCSigningAuthority
+	var authorities []*root.RHMTCSigningAuthority
 	for _, key := range mtcKeys.PublicKeys {
 		pubKey, err := cryptoutils.UnmarshalPEMToPublicKey([]byte(key.PublicKeyPem))
 		if err != nil {
@@ -658,7 +658,7 @@ func parseMTCSpec(spec string) ([]*root.MTCSigningAuthority, error) {
 			operator = "unknown"
 		}
 
-		authority := &root.MTCSigningAuthority{
+		authority := &root.RHMTCSigningAuthority{
 			URI:                 fulcioURL,
 			PublicKey:           pubKey,
 			ValidityPeriodStart: startTime,

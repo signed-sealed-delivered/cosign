@@ -31,13 +31,13 @@ import (
 
 // SignDataOptions contains optional configuration for signing operations.
 type SignDataOptions struct {
-	FulcioTimeout  time.Duration
-	FulcioRetries  uint
-	MTCMaxWaitTime time.Duration
-	RekorTimeout   time.Duration
-	RekorRetries   uint
-	TSATimeout     time.Duration
-	TSARetries     uint
+	FulcioTimeout    time.Duration
+	FulcioRetries    uint
+	RHMTCMaxWaitTime time.Duration
+	RekorTimeout     time.Duration
+	RekorRetries     uint
+	TSATimeout       time.Duration
+	TSARetries       uint
 }
 
 func SignData(ctx context.Context, content sign.Content, keypair sign.Keypair, idToken string, signingConfig *root.SigningConfig, trustedMaterial root.TrustedMaterial) ([]byte, error) {
@@ -69,11 +69,11 @@ func SignDataWithOptions(ctx context.Context, content sign.Content, keypair sign
 		opts.CertificateProvider = sign.NewFulcio(fulcioOpts)
 		certProviderOpts := &sign.CertificateProviderOptions{
 			IDToken:   idToken,
-			UseMTC:    signingConfig.UseMTC,
-			UseHybrid: signingConfig.UseHybrid,
+			UseRHMTC:  signingConfig.UseRHMTC,
+			UseHybrid: signingConfig.UseRHHybrid,
 		}
-		if signOpts != nil && signOpts.MTCMaxWaitTime > 0 {
-			certProviderOpts.MTCMaxWaitTime = signOpts.MTCMaxWaitTime
+		if signOpts != nil && signOpts.RHMTCMaxWaitTime > 0 {
+			certProviderOpts.RHMTCMaxWaitTime = signOpts.RHMTCMaxWaitTime
 		}
 		opts.CertificateProviderOptions = certProviderOpts
 	} else {

@@ -77,7 +77,7 @@ type KeyOpts struct {
 	// sign/hash the payload.
 	SigningAlgorithm string
 	// Use Merkle Tree Certificates
-	UseMTC bool
+	UseRHMTC bool
 	// Use ITU-T X.509 (2019) hybrid certificates with classical and PQ signatures
-	UseHybrid bool
+	UseRHHybrid bool
 }

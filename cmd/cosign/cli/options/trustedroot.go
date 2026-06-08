@@ -24,7 +24,7 @@ type TrustedRootCreateOptions struct {
 	CTFE   []string
 	TSA    []string
 	Rekor  []string
-	MTC    []string
+	RHMTC  []string
 
 	CertChain        []string
 	FulcioURI        []string
@@ -52,8 +52,8 @@ func (o *TrustedRootCreateOptions) AddFlags(cmd *cobra.Command) {
 		"timestamping authority specification, as a comma-separated key-value list.\nRequired keys: url, certificate-chain (path to PEM-encoded certificate chain). Optional keys: start-time, end-time.")
 	cmd.Flags().StringArrayVar(&o.Rekor, "rekor", nil,
 		"rekor service specification, as a comma-separated key-value list.\nRequired keys: url, public-key (path to PEM-encoded public key), start-time. Optional keys: end-time, origin.")
-	cmd.Flags().StringArrayVar(&o.MTC, "mtc", nil,
-		"MTC signing authority specification, as a comma-separated key-value list.\nRequired keys: url. Optional keys: start-time, end-time, operator.")
+	cmd.Flags().StringArrayVar(&o.RHMTC, "rhmtc", nil,
+		"RH MTC signing authority specification, as a comma-separated key-value list.\nRequired keys: url. Optional keys: start-time, end-time, operator.")
 
 	cmd.Flags().StringArrayVar(&o.CertChain, "certificate-chain", nil,
 		"path to a list of CA certificates in PEM format which will be needed "+

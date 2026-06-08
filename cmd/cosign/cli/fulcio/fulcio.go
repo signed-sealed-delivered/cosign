@@ -64,7 +64,7 @@ func GetCertWithMode(_ context.Context, sv signature.SignerVerifier, idToken, fl
 		SignedEmailAddress: proof,
 	}
 
-	if mode == api.CertificateModeHybrid {
+	if mode == api.CertificateModeRHHybrid {
 		fmt.Fprintln(os.Stderr, "Retrieving hybrid signed certificate...")
 	} else {
 		fmt.Fprintln(os.Stderr, "Retrieving signed certificate...")
@@ -106,8 +106,8 @@ func NewSigner(ctx context.Context, ko options.KeyOpts, signer signature.SignerV
 
 	// Determine certificate mode
 	mode := api.CertificateModeTraditional
-	if ko.UseHybrid {
-		mode = api.CertificateModeHybrid
+	if ko.UseRHHybrid {
+		mode = api.CertificateModeRHHybrid
 	}
 
 	resp, err := GetCertWithMode(ctx, signer, idToken, flow, ko.OIDCIssuer, ko.OIDCClientID, ko.OIDCClientSecret, ko.OIDCRedirectURL, fClient, mode)

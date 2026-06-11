@@ -18,11 +18,7 @@ package cosign
 import (
 	"crypto"
 	"crypto/ecdsa"
-	"crypto/ed25519"
-	"crypto/rand"
-	"crypto/rsa"
 	_ "crypto/sha256" // for `crypto.SHA256`
-	"crypto/x509"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -34,7 +30,6 @@ import (
 	"github.com/sigstore/cosign/v3/pkg/oci/static"
 	v1 "github.com/sigstore/protobuf-specs/gen/pb-go/common/v1"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
-	"github.com/sigstore/sigstore/pkg/cryptoutils/goodkey"
 	"github.com/sigstore/sigstore/pkg/signature"
 	"github.com/sigstore/sigstore/pkg/signature/options"
 )
@@ -52,16 +47,7 @@ const (
 	RFC3161TimestampKey = static.RFC3161TimestampAnnotationKey
 )
 
-var SupportedKeyDetails = []v1.PublicKeyDetails{
-	v1.PublicKeyDetails_PKIX_ECDSA_P256_SHA_256,
-	v1.PublicKeyDetails_PKIX_ECDSA_P384_SHA_384,
-	v1.PublicKeyDetails_PKIX_ECDSA_P521_SHA_512,
-	v1.PublicKeyDetails_PKIX_RSA_PKCS1V15_2048_SHA256,
-	v1.PublicKeyDetails_PKIX_RSA_PKCS1V15_3072_SHA256,
-	v1.PublicKeyDetails_PKIX_RSA_PKCS1V15_4096_SHA256,
-	// Ed25519ph is not supported by Fulcio, so we don't support it here for now.
-	// v1.PublicKeyDetails_PKIX_ED25519_PH,
-}
+var SupportedKeyDetails = signature.SupportedSignatureAlgorithms()
 
 // PassFunc is the function to be called to retrieve the signer password. If
 // nil, then it assumes that no password is provided.
@@ -104,28 +90,54 @@ func GeneratePrivateKeyWithAlgorithm(algo *signature.AlgorithmDetails) (crypto.P
 		currentAlgo = *algo
 	}
 
-	switch currentAlgo.GetKeyType() {
-	case signature.ECDSA:
-		curve, err := currentAlgo.GetECDSACurve()
-		if err != nil {
-			return nil, fmt.Errorf("error getting ECDSA curve: %w", err)
-		}
-		return ecdsa.GenerateKey(*curve, rand.Reader)
-	case signature.RSA:
-		rsaKeySize, err := currentAlgo.GetRSAKeySize()
-		if err != nil {
-			return nil, fmt.Errorf("error getting RSA key size: %w", err)
-		}
-		return rsa.GenerateKey(rand.Reader, int(rsaKeySize))
-	case signature.ED25519:
-		_, priv, err := ed25519.GenerateKey(rand.Reader)
-		if err != nil {
-			return nil, fmt.Errorf("error generating ED25519 key: %w", err)
-		}
-		return priv, nil
+	return currentAlgo.GenerateKey()
+}
+
+// keyTypeError returns a type-specific error message for key operations
+func keyTypeError(pemType, operation string, err error) error {
+	var keyType string
+	switch pemType {
+	case RSAPrivateKeyPemType:
+		keyType = "rsa"
+	case ECPrivateKeyPemType:
+		keyType = "ecdsa"
+	case PrivateKeyPemType:
+		keyType = "pkcs #8"
 	default:
-		return nil, fmt.Errorf("unsupported key type: %v", currentAlgo.GetKeyType())
+		return fmt.Errorf("unsupported private key")
 	}
+
+	// ECDSA parsing errors don't include the underlying error
+	if pemType == ECPrivateKeyPemType && operation == "parsing" {
+		return fmt.Errorf("error %s %s private key", operation, keyType)
+	}
+
+	return fmt.Errorf("error %s %s key: %w", operation, keyType, err)
+}
+
+// KeyPairHandler provides an interface for key pair operations (generation and import)
+type KeyPairHandler interface {
+	// ImportKeyPair imports a key pair
+	ImportKeyPair(key crypto.PrivateKey, ptype string) (*Keys, error)
+
+	// GenerateKeyPairForAlgorithm generates a new key pair for the specified algorithm
+	GenerateKeyPairForAlgorithm(algorithmName string) (*Keys, error)
+}
+
+// classicalKeyPairHandler implements KeyPairHandler for classical keys
+type classicalKeyPairHandler struct{}
+
+// Global key pair handler instance
+var keyPairHandler KeyPairHandler = &classicalKeyPairHandler{}
+
+// SetKeyPairHandler sets the global key pair handler
+func SetKeyPairHandler(kph KeyPairHandler) {
+	keyPairHandler = kph
+}
+
+// GetKeyPairHandler returns the global key pair handler
+func GetKeyPairHandler() KeyPairHandler {
+	return keyPairHandler
 }
 
 // ImportKeyPair imports a key pair from a file containing a PEM-encoded
@@ -145,59 +157,36 @@ func ImportKeyPair(keyPath string, pf PassFunc) (*KeysBytes, error) {
 		return nil, fmt.Errorf("invalid pem block")
 	}
 
-	var pk crypto.Signer
-
-	switch p.Type {
-	case RSAPrivateKeyPemType:
-		rsaPk, err := x509.ParsePKCS1PrivateKey(p.Bytes)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing rsa private key: %w", err)
-		}
-		if err = goodkey.ValidatePubKey(rsaPk.Public()); err != nil {
-			return nil, fmt.Errorf("error validating rsa key: %w", err)
-		}
-		pk = rsaPk
-	case ECPrivateKeyPemType:
-		ecdsaPk, err := x509.ParseECPrivateKey(p.Bytes)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing ecdsa private key")
-		}
-		if err = goodkey.ValidatePubKey(ecdsaPk.Public()); err != nil {
-			return nil, fmt.Errorf("error validating ecdsa key: %w", err)
-		}
-		pk = ecdsaPk
-	case PrivateKeyPemType:
-		pkcs8Pk, err := x509.ParsePKCS8PrivateKey(p.Bytes)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing pkcs #8 private key")
-		}
-		switch k := pkcs8Pk.(type) {
-		case *rsa.PrivateKey:
-			if err = goodkey.ValidatePubKey(k.Public()); err != nil {
-				return nil, fmt.Errorf("error validating rsa key: %w", err)
-			}
-			pk = k
-		case *ecdsa.PrivateKey:
-			if err = goodkey.ValidatePubKey(k.Public()); err != nil {
-				return nil, fmt.Errorf("error validating ecdsa key: %w", err)
-			}
-			pk = k
-		case ed25519.PrivateKey:
-			if err = goodkey.ValidatePubKey(k.Public()); err != nil {
-				return nil, fmt.Errorf("error validating ed25519 key: %w", err)
-			}
-			pk = k
-		default:
-			return nil, fmt.Errorf("unexpected private key")
-		}
-	default:
-		return nil, fmt.Errorf("unsupported private key")
+	key, err := cryptoutils.UnmarshalPEMToPrivateKey(pem.EncodeToMemory(p), nil)
+	if err != nil {
+		return nil, keyTypeError(p.Type, "parsing", err)
 	}
-	return marshalKeyPair(p.Type, Keys{pk, pk.Public()}, pf)
+
+	keys, err := GetKeyPairHandler().ImportKeyPair(key, p.Type)
+	if err != nil {
+		return nil, err
+	}
+	if keys == nil {
+		return nil, keyTypeError(p.Type, "importing", fmt.Errorf("expected key pair for %s", p.Type))
+	}
+	return marshalKeyPair(p.Type, *keys, pf)
+}
+
+// ImportKeyPair is the classical (non-PQ) implementation
+func (kph *classicalKeyPairHandler) ImportKeyPair(key crypto.PrivateKey, ptype string) (*Keys, error) {
+	pk, ok := key.(crypto.Signer)
+	if !ok {
+		return nil, fmt.Errorf("private key does not implement crypto.Signer")
+	}
+
+	if err := cryptoutils.ValidatePubKey(pk.Public()); err != nil {
+		return nil, keyTypeError(ptype, "validating", err)
+	}
+	return &Keys{pk, pk.Public()}, nil
 }
 
 func marshalKeyPair(ptype string, keypair Keys, pf PassFunc) (key *KeysBytes, err error) {
-	x509Encoded, err := x509.MarshalPKCS8PrivateKey(keypair.private)
+	x509Encoded, err := cryptoutils.MarshalPrivateKeyToDER(keypair.private)
 	if err != nil {
 		return nil, fmt.Errorf("x509 encoding private key: %w", err)
 	}
@@ -249,7 +238,7 @@ func GenerateKeyPair(pf PassFunc) (*KeysBytes, error) {
 	return marshalKeyPair(SigstorePrivateKeyPemType, Keys{priv, priv.Public()}, pf)
 }
 
-func GenerateKeyPairWithAlgorithm(algo *signature.AlgorithmDetails, pf PassFunc) (*KeysBytes, error) {
+func GenerateKeyPairWithAlgorithm(algo *signature.AlgorithmDetails) (*Keys, error) {
 	priv, err := GeneratePrivateKeyWithAlgorithm(algo)
 	if err != nil {
 		return nil, err
@@ -258,8 +247,38 @@ func GenerateKeyPairWithAlgorithm(algo *signature.AlgorithmDetails, pf PassFunc)
 	if !ok {
 		return nil, fmt.Errorf("private key is not a signer verifier")
 	}
+	return &Keys{signer, signer.Public()}, nil
+}
+
+// GenerateKeyPairForAlgorithm generates a key pair for the specified algorithm string.
+func GenerateKeyPairForAlgorithm(algorithmName string, pf PassFunc) (*KeysBytes, error) {
+	keys, err := GetKeyPairHandler().GenerateKeyPairForAlgorithm(algorithmName)
+	if err != nil {
+		return nil, err
+	}
+	if keys == nil {
+		return nil, fmt.Errorf("expected keys for algorithm: %s", algorithmName)
+	}
 	// Emit SIGSTORE keys by default
-	return marshalKeyPair(SigstorePrivateKeyPemType, Keys{signer, signer.Public()}, pf)
+	return marshalKeyPair(SigstorePrivateKeyPemType, Keys{keys.private, keys.public}, pf)
+}
+
+// GenerateKeyPairForAlgorithm is the classical (non-PQ) implementation
+func (kph *classicalKeyPairHandler) GenerateKeyPairForAlgorithm(algorithmName string) (*Keys, error) {
+	for _, details := range SupportedKeyDetails {
+		algoDetails, err := signature.GetAlgorithmDetails(details)
+		if err != nil {
+			continue
+		}
+		flag, err := signature.FormatSignatureAlgorithmFlag(details)
+		if err != nil {
+			continue
+		}
+		if flag == algorithmName {
+			return GenerateKeyPairWithAlgorithm(&algoDetails)
+		}
+	}
+	return nil, fmt.Errorf("unsupported algorithm: %s", algorithmName)
 }
 
 // PemToECDSAKey marshals and returns the PEM-encoded ECDSA public key.
@@ -291,7 +310,7 @@ func LoadPrivateKey(key []byte, pass []byte, defaultLoadOptions *[]signature.Loa
 	if err != nil {
 		return nil, fmt.Errorf("decrypt: %w", err)
 	}
-	pk, err := x509.ParsePKCS8PrivateKey(x509Encoded)
+	pk, err := cryptoutils.UnmarshalDERToPrivateKey(x509Encoded)
 	if err != nil {
 		return nil, fmt.Errorf("parsing private key: %w", err)
 	}

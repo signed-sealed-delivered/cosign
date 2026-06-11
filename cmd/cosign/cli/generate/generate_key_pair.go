@@ -43,7 +43,7 @@ var (
 )
 
 // nolint
-func GenerateKeyPairCmd(ctx context.Context, kmsVal string, outputKeyPrefixVal string, args []string) error {
+func GenerateKeyPairCmd(ctx context.Context, kmsVal string, outputKeyPrefixVal string, algorithm string, args []string) error {
 	privateKeyFileName := outputKeyPrefixVal + ".key"
 	publicKeyFileName := outputKeyPrefixVal + ".pub"
 
@@ -86,7 +86,14 @@ func GenerateKeyPairCmd(ctx context.Context, kmsVal string, outputKeyPrefixVal s
 		return fmt.Errorf("undefined provider: %s", provider)
 	}
 
-	keys, err := cosign.GenerateKeyPair(GetPass)
+	var keys *cosign.KeysBytes
+	var err error
+
+	if algorithm != "" {
+		keys, err = cosign.GenerateKeyPairForAlgorithm(algorithm, GetPass)
+	} else {
+		keys, err = cosign.GenerateKeyPair(GetPass)
+	}
 	if err != nil {
 		return err
 	}

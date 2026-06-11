@@ -417,15 +417,8 @@ func TestVerifyImageSignatureWithInvalidPublicKeyType(t *testing.T) {
 	leaf, _ := entry.Canonicalize(ctx)
 	rekorBundle := CreateTestBundle(ctx, t, sv, leaf)
 	pemBytes, _ := cryptoutils.MarshalPublicKeyToPEM(sv.Public())
-	rekorPubKeys := NewTrustedTransparencyLogPubKeys()
-	// Add one valid key here.
-	rekorPubKeys.AddTransparencyLogPubKey(pemBytes, tuf.Active)
-
-	opts := []static.Option{static.WithCertChain(pemLeaf, []byte{}), static.WithBundle(rekorBundle)}
-	ociSig, _ := static.NewSignature(payload, base64.StdEncoding.EncodeToString(signature), opts...)
-
-	// Then try to validate with keys that are not ecdsa.PublicKey and should
-	// fail.
+	// Populate rekorPubKeys with a different (RSA) key, not the one that signed
+	// the bundle. The bundle's LogID will not be found in the map.
 	var rsaPrivKey crypto.PrivateKey
 	rsaPrivKey, err = rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
@@ -440,9 +433,16 @@ func TestVerifyImageSignatureWithInvalidPublicKeyType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unable to marshal RSA test key: %v", err)
 	}
+	rekorPubKeys := NewTrustedTransparencyLogPubKeys()
 	if err = rekorPubKeys.AddTransparencyLogPubKey(rsaPEM, tuf.Active); err != nil {
 		t.Fatalf("failed to add RSA key to transparency log public keys: %v", err)
 	}
+
+	_ = pemBytes // ECDSA key intentionally not added — bundle's LogID should not be found
+
+	opts := []static.Option{static.WithCertChain(pemLeaf, []byte{}), static.WithBundle(rekorBundle)}
+	ociSig, _ := static.NewSignature(payload, base64.StdEncoding.EncodeToString(signature), opts...)
+
 	verified, err := VerifyImageSignature(context.TODO(), ociSig, v1.Hash{},
 		&CheckOpts{
 			RootCerts:    rootPool,
@@ -452,8 +452,8 @@ func TestVerifyImageSignatureWithInvalidPublicKeyType(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error got none")
 	}
-	if !strings.Contains(err.Error(), "is not type ecdsa.PublicKey") {
-		t.Errorf("did not get expected failure message, wanted 'is not type ecdsa.PublicKey' got: %v", err)
+	if !strings.Contains(err.Error(), "rekor log public key not found for payload") {
+		t.Errorf("did not get expected failure message, wanted 'rekor log public key not found for payload' got: %v", err)
 	}
 	if verified == true {
 		t.Fatalf("expected verified=false, got verified=true")

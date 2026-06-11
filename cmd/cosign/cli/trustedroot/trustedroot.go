@@ -18,10 +18,6 @@ package trustedroot
 import (
 	"context"
 	"crypto"
-	"crypto/ecdsa"
-	"crypto/ed25519"
-	"crypto/elliptic"
-	"crypto/rsa"
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
@@ -35,6 +31,7 @@ import (
 	"github.com/sigstore/rekor-tiles/v2/pkg/note"
 	"github.com/sigstore/sigstore-go/pkg/root"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
+	"github.com/sigstore/sigstore/pkg/signature"
 )
 
 type CreateCmd struct {
@@ -578,25 +575,9 @@ func parseTLogSpec(spec string) (*root.TransparencyLog, string, error) {
 }
 
 func getSignatureHashAlgo(pubKey crypto.PublicKey) crypto.Hash {
-	var h crypto.Hash
-	switch pk := pubKey.(type) {
-	case *rsa.PublicKey:
-		h = crypto.SHA256
-	case *ecdsa.PublicKey:
-		switch pk.Curve {
-		case elliptic.P256():
-			h = crypto.SHA256
-		case elliptic.P384():
-			h = crypto.SHA384
-		case elliptic.P521():
-			h = crypto.SHA512
-		default:
-			h = crypto.SHA256
-		}
-	case ed25519.PublicKey:
-		h = crypto.SHA512
-	default:
-		h = crypto.SHA256
+	algo, err := signature.GetDefaultAlgorithmDetails(pubKey)
+	if err != nil {
+		return crypto.SHA256
 	}
-	return h
+	return algo.GetHashType()
 }

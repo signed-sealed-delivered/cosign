@@ -18,13 +18,6 @@ import (
 	"bytes"
 	"context"
 	"crypto"
-	"crypto/ecdsa"
-	"crypto/ed25519"
-	"crypto/rsa"
-	"crypto/sha256"
-	"crypto/x509"
-	"encoding/base64"
-	"errors"
 	"fmt"
 
 	"github.com/sigstore/cosign/v3/pkg/cosign"
@@ -49,29 +42,18 @@ func NewSignerVerifierKeypair(sv signature.SignerVerifier, defaultLoadOptions *[
 	if err != nil {
 		return nil, fmt.Errorf("getting public key: %w", err)
 	}
-	pubKeyBytes, err := x509.MarshalPKIXPublicKey(pubKey)
+	keyID, err := cryptoutils.NewKeyIdentity(pubKey)
 	if err != nil {
-		return nil, fmt.Errorf("marshalling public key: %w", err)
+		return nil, fmt.Errorf("computing key identity: %w", err)
 	}
-	hashedBytes := sha256.Sum256(pubKeyBytes)
-	hint := []byte(base64.StdEncoding.EncodeToString(hashedBytes[:]))
-
-	var keyAlg string
-	switch pubKey.(type) {
-	case *ecdsa.PublicKey:
-		keyAlg = "ECDSA"
-	case *rsa.PublicKey:
-		keyAlg = "RSA"
-	case ed25519.PublicKey:
-		keyAlg = "ED25519"
-	default:
-		return nil, errors.New("unsupported key type")
-	}
+	hint := []byte(keyID.RFC6962KeyID())
 
 	algo, err := signature.GetDefaultAlgorithmDetails(pubKey, *cosign.GetDefaultLoadOptions(defaultLoadOptions)...)
 	if err != nil {
 		return nil, fmt.Errorf("getting default algorithm details: %w", err)
 	}
+
+	keyAlg := algo.GetKeyFamilyName()
 
 	return &SignerVerifierKeypair{
 		sv:     sv,
@@ -121,6 +103,15 @@ func (k *SignerVerifierKeypair) GetPublicKeyPem() (string, error) {
 		return "", err
 	}
 	return string(pemBytes), nil
+}
+
+// GetPublicKeyDer returns the public key in DER format.
+func (k *SignerVerifierKeypair) GetPublicKeyDer() ([]byte, error) {
+	pubKey, err := k.sv.PublicKey()
+	if err != nil {
+		return nil, err
+	}
+	return cryptoutils.MarshalPublicKeyToDER(pubKey)
 }
 
 // SignData signs the given data with the SignerVerifier.

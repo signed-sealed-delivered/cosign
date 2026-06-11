@@ -160,8 +160,7 @@ func TestGetCTLogID(t *testing.T) {
 }
 
 func TestVerifyTLogEntryOfflineFailsWithInvalidPublicKey(t *testing.T) {
-	// Then try to validate with keys that are not ecdsa.PublicKey and should
-	// fail.
+	// Validation should fail because the SignedEntryTimestamp is not set.
 	var rsaPrivKey crypto.PrivateKey
 	rsaPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
@@ -235,8 +234,8 @@ func TestVerifyTLogEntryOfflineFailsWithInvalidPublicKey(t *testing.T) {
 	if err == nil {
 		t.Fatal("Wanted error got none")
 	}
-	if !strings.Contains(err.Error(), "is not type ecdsa.PublicKey") {
-		t.Fatalf("Did not get expected error message, wanted 'is not type ecdsa.PublicKey' got: %v", err)
+	if !strings.Contains(err.Error(), "unable to verify SET") {
+		t.Fatalf("Did not get expected error message, wanted 'unable to verify SET' got: %v", err)
 	}
 }
 

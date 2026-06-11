@@ -16,7 +16,6 @@ package bundle
 
 import (
 	"context"
-	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"log"
@@ -27,6 +26,7 @@ import (
 	"github.com/sigstore/cosign/v3/internal/ui"
 	"github.com/sigstore/sigstore-go/pkg/root"
 	"github.com/sigstore/sigstore-go/pkg/sign"
+	"github.com/sigstore/sigstore/pkg/cryptoutils"
 	"github.com/sigstore/sigstore/pkg/signature"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -68,7 +68,7 @@ func SignData(ctx context.Context, content sign.Content, keypair sign.Keypair, i
 			return nil, err
 		}
 		block, _ := pem.Decode([]byte(publicKeyPem))
-		pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
+		pubKey, err := cryptoutils.UnmarshalDERToPublicKey(block.Bytes)
 		if err != nil {
 			log.Fatal(err)
 		}

@@ -16,8 +16,6 @@ package bundle
 
 import (
 	"crypto"
-	"crypto/sha256"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -82,12 +80,11 @@ func MakeNewBundle(pubKey crypto.PublicKey, rekorEntry *models.LogEntryAnon, pay
 
 	cert, err := cryptoutils.UnmarshalCertificatesFromPEM(signer)
 	if err != nil || len(cert) == 0 {
-		pkixPubKey, err := x509.MarshalPKIXPublicKey(pubKey)
+		keyID, err := cryptoutils.NewKeyIdentity(pubKey)
 		if err != nil {
 			return nil, err
 		}
-		hashedBytes := sha256.Sum256(pkixPubKey)
-		hint = base64.StdEncoding.EncodeToString(hashedBytes[:])
+		hint = keyID.RFC6962KeyID()
 	} else {
 		rawCert = cert[0].Raw
 	}

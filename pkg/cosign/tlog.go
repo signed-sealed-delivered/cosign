@@ -18,9 +18,6 @@ import (
 	"bytes"
 	"context"
 	"crypto"
-	"crypto/ecdsa"
-	"crypto/sha256"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
@@ -107,12 +104,11 @@ const entryIDHexStringLen = treeIDHexStringLen + uuidHexStringLen
 // (see RFC 6962 S3.2)
 // In CT V1 the log id is a hash of the public key.
 func GetTransparencyLogID(pub crypto.PublicKey) (string, error) {
-	pubBytes, err := x509.MarshalPKIXPublicKey(pub)
+	keyID, err := cryptoutils.NewKeyIdentity(pub)
 	if err != nil {
 		return "", err
 	}
-	digest := sha256.Sum256(pubBytes)
-	return hex.EncodeToString(digest[:]), nil
+	return keyID.IDString(), nil
 }
 
 func dsseEntry(ctx context.Context, signature, pubKey []byte) (models.ProposedEntry, error) {
@@ -553,18 +549,11 @@ func VerifyTLogEntryOffline(ctx context.Context, e *models.LogEntryAnon, rekorPu
 		LogID:          *e.LogID,
 	}
 
-	// Make sure all the rekorPubKeys are ecsda.PublicKeys
-	for k, v := range rekorPubKeys.Keys {
-		if _, ok := v.PubKey.(*ecdsa.PublicKey); !ok {
-			return fmt.Errorf("rekor Public key for LogID %s is not type ecdsa.PublicKey", k)
-		}
-	}
-
 	pubKey, ok := rekorPubKeys.Keys[payload.LogID]
 	if !ok {
 		return errors.New("rekor log public key not found for payload. Check your TUF root (see cosign initialize) or set a custom key with env var SIGSTORE_REKOR_PUBLIC_KEY")
 	}
-	err = VerifySET(payload, []byte(e.Verification.SignedEntryTimestamp), pubKey.PubKey.(*ecdsa.PublicKey))
+	err = VerifySET(payload, []byte(e.Verification.SignedEntryTimestamp), pubKey.PubKey)
 	if err != nil {
 		return fmt.Errorf("verifying signedEntryTimestamp: %w", err)
 	}

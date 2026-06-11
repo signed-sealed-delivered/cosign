@@ -101,15 +101,13 @@ func AssembleNewBundle(ctx context.Context, sigBytes, signedTimestamp []byte, en
 		if err != nil {
 			return nil, err
 		}
-		pubKeyBytes, err := x509.MarshalPKIXPublicKey(pub)
+		keyID, err := cryptoutils.NewKeyIdentity(pub)
 		if err != nil {
 			return nil, err
 		}
-		hashedBytes := sha256.Sum256(pubKeyBytes)
-
 		pb.VerificationMaterial.Content = &protobundle.VerificationMaterial_PublicKey{
 			PublicKey: &protocommon.PublicKeyIdentifier{
-				Hint: base64.StdEncoding.EncodeToString(hashedBytes[:]),
+				Hint: keyID.RFC6962KeyID(),
 			},
 		}
 	}

@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"crypto"
-	"crypto/ecdsa"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/asn1"
@@ -107,8 +106,6 @@ type CheckOpts struct {
 	// RekorPubKeys, if set, is used to validate signatures on log entries from
 	// Rekor. It is a map from LogID to crypto.PublicKey. LogID is
 	// derived from the PublicKey (see RFC 6962 S3.2).
-	// Note that even though the type is of crypto.PublicKey, Rekor only allows
-	// for ecdsa.PublicKey: https://github.com/sigstore/cosign/issues/2540
 	RekorPubKeys *TrustedTransparencyLogPubKeys
 
 	// SigVerifier is used to verify signatures.
@@ -1333,20 +1330,13 @@ func VerifyBundle(sig oci.Signature, co *CheckOpts) (bool, error) {
 
 		return true, nil
 	}
-	// Make sure all the rekorPubKeys are ecsda.PublicKeys
-	for k, v := range co.RekorPubKeys.Keys {
-		if _, ok := v.PubKey.(*ecdsa.PublicKey); !ok {
-			return false, fmt.Errorf("rekor Public key for LogID %s is not type ecdsa.PublicKey", k)
-		}
-	}
-
 	pubKey, ok := co.RekorPubKeys.Keys[bundle.Payload.LogID]
 	if !ok {
 		return false, &VerificationFailure{
 			fmt.Errorf("verifying bundle: rekor log public key not found for payload"),
 		}
 	}
-	err = VerifySET(bundle.Payload, bundle.SignedEntryTimestamp, pubKey.PubKey.(*ecdsa.PublicKey))
+	err = VerifySET(bundle.Payload, bundle.SignedEntryTimestamp, pubKey.PubKey)
 	if err != nil {
 		return false, err
 	}
@@ -1605,7 +1595,7 @@ func bundleKey(bundleBody string) (string, error) {
 	}
 }
 
-func VerifySET(bundlePayload cbundle.RekorPayload, signature []byte, pub *ecdsa.PublicKey) error {
+func VerifySET(bundlePayload cbundle.RekorPayload, sig []byte, pub crypto.PublicKey) error {
 	contents, err := json.Marshal(bundlePayload)
 	if err != nil {
 		return fmt.Errorf("marshaling: %w", err)
@@ -1615,9 +1605,11 @@ func VerifySET(bundlePayload cbundle.RekorPayload, signature []byte, pub *ecdsa.
 		return fmt.Errorf("canonicalizing: %w", err)
 	}
 
-	// verify the SET against the public key
-	hash := sha256.Sum256(canonicalized)
-	if !ecdsa.VerifyASN1(pub, hash[:], signature) {
+	verifier, err := signature.LoadDefaultVerifier(pub)
+	if err != nil {
+		return fmt.Errorf("loading verifier: %w", err)
+	}
+	if err := verifier.VerifySignature(bytes.NewReader(sig), bytes.NewReader(canonicalized)); err != nil {
 		return &VerificationFailure{
 			fmt.Errorf("unable to verify SET"),
 		}

@@ -46,7 +46,7 @@ jobs:
       - name: Extract version of Go to use
         run: echo "GOVERSION=$(awk -F'[:@]' '/FROM golang/{print $2; exit}' Dockerfile)" >> $GITHUB_ENV
 
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version: '${{ env.GOVERSION }}'
           check-latest: true
@@ -66,7 +66,7 @@ jobs:
       - name: Extract version of Go to use
         run: echo "GOVERSION=$(awk -F'[:@]' '/FROM golang/{print $2; exit}' Dockerfile)" >> $GITHUB_ENV
 
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version: '${{ env.GOVERSION }}'
           check-latest: true
@@ -104,18 +104,18 @@ jobs:
           persist-credentials: false
 
       - name: setup vault
-        uses: cpanato/vault-installer@f7e2ad9737b49f351f233eba2df1bdfede939a21 # v1.3.0
+        uses: cpanato/vault-installer@fe568170412f5d81202ec528148f05176efbecc1 # v1.4.0
 
       - name: Extract version of Go to use
         run: echo "GOVERSION=$(awk -F'[:@]' '/FROM golang/{print $2; exit}' Dockerfile)" >> $GITHUB_ENV
 
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version: '${{ env.GOVERSION }}'
           check-latest: true
           cache: false
 
-      - uses: imjasonh/setup-crane@31b88efe9de28ae0ffa220711af4b60be9435f6e # v0.4
+      - uses: imjasonh/setup-crane@59c71e96a00b28651f10369ba3359a6d730740a0 # v0.6
 
       - name: Install cluster + sigstore
         uses: sigstore/scaffolding/actions/setup@main
@@ -142,14 +142,14 @@ jobs:
     - name: Extract version of Go to use
       run: echo "GOVERSION=$(awk -F'[:@]' '/FROM golang/{print $2; exit}' Dockerfile)" >> $GITHUB_ENV
 
-    - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+    - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
       with:
         go-version: '${{ env.GOVERSION }}'
         check-latest: true
         cache: false
 
     - name: Setup mirror
-      uses: chainguard-dev/actions/setup-mirror@abcc11e1cf9073eff6c69e91c49756c1430b094c # v1.5.8
+      uses: chainguard-dev/actions/setup-mirror@3b7bbeebc3a5d2bc37aa008350202651c32a26e1 # v1.6.22
       with:
         mirror: mirror.gcr.io
 
@@ -257,4 +257,4 @@ jobs:
 
     - name: Collect diagnostics
       if: ${{ failure() }}
-      uses: chainguard-dev/actions/kind-diag@abcc11e1cf9073eff6c69e91c49756c1430b094c # v1.5.8
+      uses: chainguard-dev/actions/kind-diag@3b7bbeebc3a5d2bc37aa008350202651c32a26e1 # v1.6.22

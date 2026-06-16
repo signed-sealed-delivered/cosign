@@ -65,8 +65,8 @@ export KO_DOCKER_REPO=$(KO_PREFIX)
 GHCR_PREFIX ?= ghcr.io/sigstore/cosign
 LATEST_TAG ?=
 
-.PHONY: all lint test clean cosign conformance cross
-all: cosign
+.PHONY: all lint test clean cosign cosign_pq conformance cross
+all: cosign cosign_pq
 
 log-%:
 	@grep -h -E '^$*:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -80,6 +80,9 @@ log-%:
 
 cosign: $(SRCS)
 	CGO_ENABLED=0 $(GOEXE) build -trimpath -ldflags "$(LDFLAGS)" -o $@ ./cmd/cosign
+
+cosign_pq: $(SRCS)
+	CGO_ENABLED=0 $(GOEXE) build -tags pq_circl -trimpath -ldflags "$(LDFLAGS)" -o $@ ./cmd/cosign
 
 cosign-pivkey-pkcs11key: $(SRCS)
 	CGO_ENABLED=1 $(GOEXE) build -trimpath -tags=pivkey,pkcs11key -ldflags "$(LDFLAGS)" -o cosign ./cmd/cosign
@@ -113,7 +116,7 @@ test:
 	$(GOEXE) test $(shell $(GOEXE) list ./... | grep -v third_party/)
 
 clean:
-	rm -rf cosign
+	rm -rf cosign cosign_pq
 	rm -rf dist/
 
 KOCACHE_PATH=/tmp/ko

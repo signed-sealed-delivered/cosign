@@ -35,10 +35,12 @@ import (
 )
 
 type CreateCmd struct {
-	FulcioSpecs []string
-	RekorSpecs  []string
-	CTFESpecs   []string
-	TSASpecs    []string
+	FulcioSpecs        []string
+	RekorSpecs         []string
+	CTFESpecs          []string
+	TSASpecs           []string
+	ExtendedRekorSpecs []string
+	ExtendedCTFESpecs  []string
 
 	WithDefaultServices bool
 	NoDefaultFulcio     bool
@@ -65,8 +67,10 @@ type CreateCmd struct {
 func (c *CreateCmd) Exec(_ context.Context) error {
 	var fulcioCertAuthorities []root.CertificateAuthority
 	ctLogs := make(map[string]*root.TransparencyLog)
+	extendedCtLogs := make(map[string]*root.TransparencyLog)
 	var timestampAuthorities []root.TimestampingAuthority
 	rekorTransparencyLogs := make(map[string]*root.TransparencyLog)
+	extendedRekorLogs := make(map[string]*root.TransparencyLog)
 	var err error
 
 	// Decide whether to use new or old flags
@@ -136,20 +140,8 @@ func (c *CreateCmd) Exec(_ context.Context) error {
 	}
 
 	if ctfeSpecUsed {
-		for _, spec := range c.CTFESpecs {
-			ctLog, id, err := parseTLogSpec(spec)
-			if err != nil {
-				return fmt.Errorf("parsing ctfe spec: %w", err)
-			}
-			// Static CT needs origin for checkpoint ID
-			kvs, _ := parseKVs(spec)
-			if origin, ok := kvs["origin"]; ok {
-				id, ctLog.ID, err = getCheckpointID(origin, ctLog.PublicKey)
-				if err != nil {
-					return err
-				}
-			}
-			ctLogs[id] = ctLog
+		if err := parseTLogSpecs(c.CTFESpecs, ctLogs, "ctfe"); err != nil {
+			return err
 		}
 	} else if deprecatedCTFEFlagsUsed {
 		for i := 0; i < len(c.CtfeKeyPath); i++ {
@@ -193,20 +185,8 @@ func (c *CreateCmd) Exec(_ context.Context) error {
 	}
 
 	if rekorSpecUsed {
-		for _, spec := range c.RekorSpecs {
-			rekorLog, id, err := parseTLogSpec(spec)
-			if err != nil {
-				return fmt.Errorf("parsing rekor spec: %w", err)
-			}
-			// Rekor v2 needs origin for checkpoint ID
-			kvs, _ := parseKVs(spec)
-			if origin, ok := kvs["origin"]; ok {
-				id, rekorLog.ID, err = getCheckpointID(origin, rekorLog.PublicKey)
-				if err != nil {
-					return err
-				}
-			}
-			rekorTransparencyLogs[id] = rekorLog
+		if err := parseTLogSpecs(c.RekorSpecs, rekorTransparencyLogs, "rekor"); err != nil {
+			return err
 		}
 	} else if deprecatedRekorFlagsUsed {
 		for i := 0; i < len(c.RekorKeyPath); i++ {
@@ -282,9 +262,16 @@ func (c *CreateCmd) Exec(_ context.Context) error {
 		}
 	}
 
-	newTrustedRoot, err := root.NewTrustedRoot(root.TrustedRootMediaType01,
+	if err := parseTLogSpecs(c.ExtendedRekorSpecs, extendedRekorLogs, "extended-rekor"); err != nil {
+		return err
+	}
+	if err := parseTLogSpecs(c.ExtendedCTFESpecs, extendedCtLogs, "extended-ctfe"); err != nil {
+		return err
+	}
+
+	newTrustedRoot, err := root.NewTrustedRootWithExtended(root.TrustedRootMediaType01,
 		fulcioCertAuthorities, ctLogs, timestampAuthorities,
-		rekorTransparencyLogs,
+		rekorTransparencyLogs, extendedRekorLogs, extendedCtLogs,
 	)
 	if err != nil {
 		return err
@@ -529,6 +516,24 @@ func parseTSASpec(spec string) (root.TimestampingAuthority, error) {
 		ValidityPeriodEnd:   endTime,
 		URI:                 kvs["url"],
 	}, nil
+}
+
+func parseTLogSpecs(specs []string, dest map[string]*root.TransparencyLog, label string) error {
+	for _, spec := range specs {
+		tlog, id, err := parseTLogSpec(spec)
+		if err != nil {
+			return fmt.Errorf("parsing %s spec: %w", label, err)
+		}
+		kvs, _ := parseKVs(spec)
+		if origin, ok := kvs["origin"]; ok {
+			id, tlog.ID, err = getCheckpointID(origin, tlog.PublicKey)
+			if err != nil {
+				return err
+			}
+		}
+		dest[id] = tlog
+	}
+	return nil
 }
 
 func parseTLogSpec(spec string) (*root.TransparencyLog, string, error) {

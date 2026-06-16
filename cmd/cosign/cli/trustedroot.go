@@ -56,6 +56,8 @@ Each service is specified via a repeatable flag (--fulcio, --rekor, --ctfe, --ts
 				RekorSpecs:          o.Rekor,
 				CTFESpecs:           o.CTFE,
 				TSASpecs:            o.TSA,
+				ExtendedRekorSpecs:  o.ExtendedRekor,
+				ExtendedCTFESpecs:   o.ExtendedCTFE,
 				CertChain:           o.CertChain,
 				FulcioURI:           o.FulcioURI,
 				CtfeKeyPath:         o.CtfeKeyPath,

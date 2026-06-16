@@ -304,6 +304,7 @@ require (
 )
 
 replace (
+	github.com/sigstore/protobuf-specs => ../protobuf-specs
 	github.com/sigstore/rekor => ../rekor
 	github.com/sigstore/sigstore => ../sigstore
 	github.com/sigstore/sigstore-go => ../sigstore-go

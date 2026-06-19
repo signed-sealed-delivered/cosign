@@ -34,6 +34,10 @@ import (
 type SignOptions struct {
 	TSAClientTransport  http.RoundTripper
 	CertificateProvider sign.CertificateProvider
+	// AltKeypair, when set, produces a second artifact signature using this
+	// keypair. The alt public key must already be embedded in the certificate's
+	// SubjectAltPublicKeyInfo extension (OID 2.5.29.72) by Fulcio.
+	AltKeypair sign.Keypair
 }
 
 func SignData(ctx context.Context, content sign.Content, keypair sign.Keypair, idToken string, cert []byte, signingConfig *root.SigningConfig, trustedMaterial root.TrustedMaterial, opts SignOptions) ([]byte, error) {
@@ -42,6 +46,8 @@ func SignData(ctx context.Context, content sign.Content, keypair sign.Keypair, i
 	if trustedMaterial != nil {
 		bundleOpts.TrustedRoot = trustedMaterial
 	}
+
+	bundleOpts.AltKeypair = opts.AltKeypair
 
 	switch {
 	case opts.CertificateProvider != nil:

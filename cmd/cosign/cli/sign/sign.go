@@ -289,9 +289,14 @@ func signDigest(ctx context.Context, digest name.Digest, payload []byte, ko opti
 		}
 	}
 
+	altKeypair, err := signcommon.GetAltKeypair(ko)
+	if err != nil {
+		return fmt.Errorf("generating alt keypair: %w", err)
+	}
 	cbundleOpts := cbundle.SignOptions{
 		TSAClientTransport:  tsaClientTransport,
 		CertificateProvider: certProvider,
+		AltKeypair:          altKeypair,
 	}
 
 	ociSigs := make([]oci.Signature, len(payloads))

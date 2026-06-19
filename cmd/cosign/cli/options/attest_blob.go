@@ -15,8 +15,10 @@
 package options
 
 import (
+	"fmt"
 	"strings"
 
+	"github.com/sigstore/cosign/v3/pkg/cosign"
 	"github.com/spf13/cobra"
 )
 
@@ -52,9 +54,10 @@ type AttestBlobOptions struct {
 	OIDC        OIDCOptions
 	SecurityKey SecurityKeyOptions
 
-	UseSigningConfig  bool
-	SigningConfigPath string
-	TrustedRootPath   string
+	UseSigningConfig    bool
+	SigningConfigPath   string
+	TrustedRootPath     string
+	AltSigningAlgorithm string
 }
 
 var _ Interface = (*AttestOptions)(nil)
@@ -156,4 +159,8 @@ func (o *AttestBlobOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&o.IssueCertificate, "issue-certificate", false,
 		"issue a code signing certificate from Fulcio, even if a key is provided")
 	_ = cmd.Flags().MarkDeprecated("issue-certificate", "support for this flag will be removed in the future")
+
+	keyAlgorithmTypes := cosign.GetSupportedAlgorithms()
+	altKeyAlgorithmHelp := fmt.Sprintf("alternative signing algorithm for dual-key signing; generates a second ephemeral key embedded in the certificate (allowed %s)", strings.Join(keyAlgorithmTypes, ", "))
+	cmd.Flags().StringVar(&o.AltSigningAlgorithm, "alt-signing-algorithm", "", altKeyAlgorithmHelp)
 }

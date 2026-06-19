@@ -91,6 +91,7 @@ func AttestBlob() *cobra.Command {
 				IssueCertificateForExistingKey: o.IssueCertificate,
 				BundlePath:                     o.BundlePath,
 				NewBundleFormat:                o.NewBundleFormat,
+				AltSigningAlgorithm:            o.AltSigningAlgorithm,
 			}
 			if err := signcommon.LoadTrustedMaterialAndSigningConfig(cmd.Context(), &ko, o.UseSigningConfig, o.SigningConfigPath,
 				o.Rekor.URL, o.Fulcio.URL, o.OIDC.Issuer, o.TSAServerURL, o.TrustedRootPath, o.TlogUpload,

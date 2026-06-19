@@ -77,4 +77,9 @@ type KeyOpts struct {
 	// SigningAlgorithm is the AlgorithmDetails string representation used to
 	// sign/hash the payload.
 	SigningAlgorithm string
+	// AltSigningAlgorithm, when set, generates a second ephemeral key pair for
+	// dual-key signing. Fulcio will embed the alt public key in the certificate
+	// (SubjectAltPublicKeyInfo, OID 2.5.29.72) and the bundle will contain a
+	// second artifact signature from this key.
+	AltSigningAlgorithm string
 }

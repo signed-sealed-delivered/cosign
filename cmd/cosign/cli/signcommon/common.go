@@ -474,7 +474,11 @@ func NewAttestationBundle(ctx context.Context, ko options.KeyOpts, cert, certCha
 			return nil, nil, "", pb_go_v1.HashAlgorithm_HASH_ALGORITHM_UNSPECIFIED, fmt.Errorf("getting TSA client transport: %w", err)
 		}
 	}
-	signOpts := cbundle.SignOptions{TSAClientTransport: tsaClientTransport}
+	altKeypair, err := GetAltKeypair(ko)
+	if err != nil {
+		return nil, nil, "", pb_go_v1.HashAlgorithm_HASH_ALGORITHM_UNSPECIFIED, fmt.Errorf("generating alt keypair: %w", err)
+	}
+	signOpts := cbundle.SignOptions{TSAClientTransport: tsaClientTransport, AltKeypair: altKeypair}
 
 	bundle, err := cbundle.SignData(ctx, content, keypair, idToken, certBytes, signingConfig, trustedMaterial, signOpts)
 	if err != nil {
@@ -506,6 +510,19 @@ func ParseOCIReference(ctx context.Context, refStr string, opts ...name.Option) 
 		ui.Warnf(ctx, ui.TagReferenceMessage, refStr)
 	}
 	return ref, nil
+}
+
+// GetAltKeypair generates an ephemeral alternative keypair when
+// ko.AltSigningAlgorithm is set. Returns nil without error when unset.
+func GetAltKeypair(ko options.KeyOpts) (sign.Keypair, error) {
+	if ko.AltSigningAlgorithm == "" {
+		return nil, nil
+	}
+	keyDetails, err := ParseSignatureAlgorithmFlag(ko.AltSigningAlgorithm)
+	if err != nil {
+		return nil, fmt.Errorf("parsing alt signature algorithm: %w", err)
+	}
+	return sign.NewEphemeralKeypair(&sign.EphemeralKeypairOptions{Algorithm: keyDetails})
 }
 
 func ParseSignatureAlgorithmFlag(signingAlgorithm string) (pb_go_v1.PublicKeyDetails, error) {

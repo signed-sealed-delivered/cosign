@@ -114,6 +114,7 @@ func SignBlob() *cobra.Command {
 				RFC3161TimestampPath:           o.RFC3161TimestampPath,
 				IssueCertificateForExistingKey: o.IssueCertificate,
 				SigningAlgorithm:               o.SigningAlgorithm,
+				AltSigningAlgorithm:            o.AltSigningAlgorithm,
 			}
 			if err := signcommon.LoadTrustedMaterialAndSigningConfig(cmd.Context(), &ko, o.UseSigningConfig, o.SigningConfigPath,
 				o.Rekor.URL, o.Fulcio.URL, o.OIDC.Issuer, o.TSAServerURL, o.TrustedRootPath, o.TlogUpload,

@@ -122,7 +122,11 @@ func SignBlobCmd(ctx context.Context, ro *options.RootOptions, ko options.KeyOpt
 			return nil, fmt.Errorf("getting TSA client transport: %w", err)
 		}
 	}
-	signOpts := cbundle.SignOptions{TSAClientTransport: tsaClientTransport}
+	altKeypair, err := signcommon.GetAltKeypair(ko)
+	if err != nil {
+		return nil, fmt.Errorf("generating alt keypair: %w", err)
+	}
+	signOpts := cbundle.SignOptions{TSAClientTransport: tsaClientTransport, AltKeypair: altKeypair}
 	bundleBytes, err := cbundle.SignData(ctx, content, keypair, idToken, certBytes, ko.SigningConfig, ko.TrustedMaterial, signOpts)
 	if err != nil {
 		return nil, fmt.Errorf("signing bundle: %w", err)

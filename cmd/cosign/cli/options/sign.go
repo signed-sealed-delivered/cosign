@@ -16,6 +16,10 @@
 package options
 
 import (
+	"fmt"
+	"strings"
+
+	"github.com/sigstore/cosign/v3/pkg/cosign"
 	"github.com/spf13/cobra"
 )
 
@@ -47,6 +51,7 @@ type SignOptions struct {
 	UseSigningConfig        bool
 	SigningConfigPath       string
 	TrustedRootPath         string
+	AltSigningAlgorithm     string
 
 	Rekor       RekorOptions
 	Fulcio      FulcioOptions
@@ -170,4 +175,8 @@ func (o *SignOptions) AddFlags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVar(&o.TrustedRootPath, "trusted-root", "",
 		"optional path to a TrustedRoot JSON file to verify a signature after signing")
+
+	keyAlgorithmTypes := cosign.GetSupportedAlgorithms()
+	altKeyAlgorithmHelp := fmt.Sprintf("alternative signing algorithm for dual-key signing; generates a second ephemeral key embedded in the certificate (allowed %s)", strings.Join(keyAlgorithmTypes, ", "))
+	cmd.Flags().StringVar(&o.AltSigningAlgorithm, "alt-signing-algorithm", "", altKeyAlgorithmHelp)
 }

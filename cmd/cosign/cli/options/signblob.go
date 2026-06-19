@@ -52,6 +52,7 @@ type SignBlobOptions struct {
 	RFC3161TimestampPath string
 	IssueCertificate     bool
 	SigningAlgorithm     string
+	AltSigningAlgorithm  string
 
 	UseSigningConfig  bool
 	SigningConfigPath string
@@ -161,4 +162,7 @@ func (o *SignBlobOptions) AddFlags(cmd *cobra.Command) {
 	keyAlgorithmHelp := fmt.Sprintf("signing algorithm to use for signing/hashing (allowed %s)", strings.Join(keyAlgorithmTypes, ", "))
 	defaultKeyFlag, _ := signature.FormatSignatureAlgorithmFlag(v1.PublicKeyDetails_PKIX_ECDSA_P256_SHA_256)
 	cmd.Flags().StringVar(&o.SigningAlgorithm, "signing-algorithm", defaultKeyFlag, keyAlgorithmHelp)
+
+	altKeyAlgorithmHelp := fmt.Sprintf("alternative signing algorithm for dual-key signing; generates a second ephemeral key embedded in the certificate (allowed %s)", strings.Join(keyAlgorithmTypes, ", "))
+	cmd.Flags().StringVar(&o.AltSigningAlgorithm, "alt-signing-algorithm", "", altKeyAlgorithmHelp)
 }

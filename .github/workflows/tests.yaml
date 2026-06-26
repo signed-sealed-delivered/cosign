@@ -65,7 +65,7 @@ jobs:
       - name: Extract version of Go to use
         run: echo "GOVERSION=$(awk -F'[:@]' '/FROM golang/{print $2; exit}' Dockerfile)" >> $GITHUB_ENV
 
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: '${{ env.GOVERSION }}'
           check-latest: true
@@ -166,7 +166,7 @@ jobs:
       - name: Extract version of Go to use
         run: echo "GOVERSION=$(awk -F'[:@]' '/FROM golang/{print $2; exit}' Dockerfile)" >> $GITHUB_ENV
 
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: '${{ env.GOVERSION }}'
           check-latest: true
@@ -184,7 +184,7 @@ jobs:
 
       - name: Collect diagnostics
         if: ${{ failure() }}
-        uses: chainguard-dev/actions/kind-diag@abcc11e1cf9073eff6c69e91c49756c1430b094c # v1.5.8
+        uses: chainguard-dev/actions/kind-diag@e1c4977ad9cb32b12c5b222ec0134a22bec60bd5 # v1.6.25
 
   e2e-windows-powershell-tests:
     name: Run PowerShell E2E tests
@@ -199,7 +199,7 @@ jobs:
       - name: Extract version of Go to use
         run: echo "GOVERSION=$(awk -F'[:@]' '/FROM golang/{print $2; exit}' Dockerfile)" >> $GITHUB_ENV
 
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: '${{ env.GOVERSION }}'
           check-latest: true
@@ -234,7 +234,7 @@ jobs:
       - name: Extract version of Go to use
         run: echo "GOVERSION=$(awk -F'[:@]' '/FROM golang/{print $2; exit}' Dockerfile)" >> $GITHUB_ENV
 
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version: '${{ env.GOVERSION }}'
           check-latest: true
